@@ -11,4 +11,30 @@
  * @return a pointer to the resulting path, NULL when concatenation failed
  */
 char *concat_path(char *result, char *prefix, char *suffix) {
+    // Vérifie si les entrées ne sont pas NULL
+    if (!prefix || !suffix || !result) {
+        return NULL;
+    }
+
+    // Calcul de la longueur nécessaire pour le résultat, +1 pour la barre oblique éventuelle, +1 pour '\0'
+    size_t needed_length = strlen(prefix) + strlen(suffix) + 2;
+
+    // Vérifie si la longueur dépasse PATH_SIZE
+    if (needed_length > PATH_SIZE) {
+        fprintf(stderr, "Erreur: chemin concaténé trop long.\n");
+        return NULL;
+    }
+
+    // Copie le préfixe dans le résultat
+    strcpy(result, prefix);
+
+    // Ajoute une barre oblique si nécessaire
+    if (prefix[strlen(prefix) - 1] != '/') {
+        strcat(result, "/");
+    }
+
+    // Concatène le suffixe
+    strcat(result, suffix);
+
+    return result;
 }
