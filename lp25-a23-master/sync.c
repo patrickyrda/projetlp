@@ -75,7 +75,15 @@ void make_list(files_list_t *list, char *target) {
  * @param path is the path to the dir
  * @return a pointer to a dir, NULL if it cannot be opened
  */
+
 DIR *open_dir(char *path) {
+    DIR *dir = opendir(path); // Tentative d'ouverture du répertoire
+
+    if (dir == NULL) {
+        perror("Erreur lors de l'ouverture du répertoire"); // Affiche l'erreur en cas d'échec
+    }
+
+    return dir; // Renvoie le pointeur de DIR ou NULL si échec
 }
 
 /*!
@@ -85,4 +93,14 @@ DIR *open_dir(char *path) {
  * Relevant entries are all regular files and dir, except . and ..
  */
 struct dirent *get_next_entry(DIR *dir) {
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)) != NULL) {
+        // Ignore les entrées '.' et '..'
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            return entry; // Renvoie l'entrée valide
+        }
+    }
+
+    return NULL; // Fin du répertoire ou erreur
 }
