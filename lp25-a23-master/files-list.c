@@ -28,6 +28,39 @@ void clear_files_list(files_list_t *list) {
  *  @return 0 if success, -1 else (out of memory)
  */
 files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
+    files_list_entry_t *current = list->head;
+    while (current != NULL) {
+        if (strcmp(current->file_path, file_path) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    files_list_entry_t *new_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
+    if (new_entry == NULL) {
+        return NULL;
+    }
+    new_entry->file_path = strdup(file_path);
+    if (new_entry->file_path == NULL) {
+        // Memory allocation failed
+        free(new_entry);
+        return NULL;
+    }
+    new_entry->next = NULL;
+    current = list->head;
+    files_list_entry_t *prev = NULL;
+    while (current != NULL && strcmp(current->file_path, file_path) < 0) {
+        prev = current;
+        current = current->next;
+    }
+
+    if (prev == NULL) {
+        new_entry->next = list->head;
+        list->head = new_entry;
+    } else {
+        prev->next = new_entry;
+        new_entry->next = current;
+    }
+    return new_entry; // Return the newly added entry
 }
 
 /*!
@@ -39,6 +72,22 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
  * @return 0 in case of success, -1 else
  */
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
+    if (list == NULL || entry == NULL) {
+        return -1;
+    }
+    if (list->head == NULL) {
+        list->head = entry;
+        entry->next = NULL;
+        return 0; 
+    }
+
+    files_list_entry_t* current = list->head;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+    current->next = entry;
+    entry->next = NULL;
+    return 0; 
 }
 
 /*!
@@ -51,6 +100,18 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
  *  @return a pointer to the element found, NULL if none were found.
  */
 files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size_t start_of_src, size_t start_of_dest) {
+    files_list_entry_t *current = list->head;
+    while (current != NULL) {
+        int cmp_src = strcmp(current->file_path + start_of_src, file_path + start_of_src);
+        int cmp_dest = strcmp(current->file_path + start_of_dest, file_path + start_of_dest);
+        if (cmp_src == 0 && cmp_dest == 0) {
+            return current; 
+        } else if (cmp_src > 0 || cmp_dest > 0) {
+            break;
+        }
+        current = current->next;
+    }
+    return NULL;
 }
 
 /*!
