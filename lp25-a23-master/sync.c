@@ -68,6 +68,23 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param target is the target dir whose content must be listed
  */
 void make_list(files_list_t *list, char *target) {
+    DIR *dir = open_dir(target);
+    if (dir == NULL) {
+        perror("Erreur");
+        return;
+    }
+    struct dirent *entry;
+    while ((entry = get_next_entry(dir)) != NULL) {
+        char file_path[PATH_MAX];
+        snprintf(file_path, PATH_MAX, "%s/%s", target, entry->d_name);
+        add_file_entry(list, file_path);
+        if (entry->d_type == DT_DIR) {
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                make_list(list, file_path);
+            }
+        }
+    }
+    closedir(dir);
 }
 
 /*!
