@@ -39,6 +39,41 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, bool has_md5) {
  * @param target_path is the path whose files to list
  */
 void make_files_list(files_list_t *list, char *target_path) {
+    if (list == NULL) {
+        fprintf(stderr, "Error: Invalid pointer to files_list_t\n");
+        return;
+    }
+    DIR *dir = opendir(target_path);
+    if (dir == NULL) {
+        perror("Error opening directory");
+        return;
+    }
+    list->files = NULL;
+    list->count = 0;
+    
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        // Ignorer les entrées spéciales "." et ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        char *file_name = strdup(entry->d_name);
+        if (file_name == NULL) {
+            perror("Error allocating memory for file name");
+            closedir(dir);
+            return;
+        }
+        list->files = realloc(list->files, (list->count + 1) * sizeof(char *));
+        if (list->files == NULL) {
+            perror("Error reallocating memory for files list");
+            free(file_name);
+            closedir(dir);
+            return;
+        }
+        list->files[list->count] = file_name;
+        list->count++;
+    }
+    closedir(dir);
 }
 
 /*!
