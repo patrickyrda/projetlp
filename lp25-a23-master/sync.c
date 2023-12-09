@@ -217,9 +217,9 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param target is the target dir whose content must be listed
  */
 void make_list(files_list_t *list, char *target) {
-     // Vérifie de la liste afin de voir si elle est vide
+     // Verification de la liste afin de voir si elle est vide
     if (!list) {
-        fprintf(stderr, "Error: Invalid files_list_t pointer\n");
+        fprintf(stderr, "Erreur \n");
         return;
     }
 
@@ -228,7 +228,7 @@ void make_list(files_list_t *list, char *target) {
 
     DIR *dir = open_dir(target);
     if (dir == NULL) {
-        perror("Error opening directory");
+        perror("Erreur ouverture repertoire");
         return;
     }
 
@@ -237,7 +237,7 @@ void make_list(files_list_t *list, char *target) {
         char file_path[PATH_SIZE];
         snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
 
-        // Ajoute l'entrée à la queue de la liste
+        // Ajoute entree a queue de liste
         if (add_entry_to_tail(list, file_path) == -1) {
             clear_files_list(list);
             closedir(dir);
