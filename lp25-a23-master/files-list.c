@@ -70,21 +70,20 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
  * @return 0 in case of success, -1 else
  */
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
-    if (list == NULL || entry == NULL) {
-        return -1;
+     if (list == NULL || entry == NULL) {
+        return -1; 
     }
     if (list->head == NULL) {
         list->head = entry;
-        entry->next = NULL;
-        return 0; 
+    } else {
+        files_list_entry_t* current = list->head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = entry;
     }
-    files_list_entry_t* current = list->head;
-    while (current->next != NULL) {
-        current = current->next;
-    }
-    current->next = entry;
     entry->next = NULL;
-    return 0;
+    return 0; 
 }
     
 
@@ -98,12 +97,12 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
  *  @return a pointer to the element found, NULL if none were found.
  */
 files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size_t start_of_src, size_t start_of_dest) {
-    iles_list_entry_t *current = list->head;
+    files_list_entry_t *current = list->head;
     while (current != NULL) {
         int cmp_src = strcmp(current->file_path + start_of_src, file_path + start_of_src);
         int cmp_dest = strcmp(current->file_path + start_of_dest, file_path + start_of_dest);
         if (cmp_src == 0 && cmp_dest == 0) {
-            return current; // File found
+            return current; 
         } else if (cmp_src > 0 || cmp_dest > 0) {
             break;
         }
