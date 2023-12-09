@@ -30,7 +30,45 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
  * @has_md5 a value to enable or disable MD5 sum check
  * @return true if both files are not equal, false else
  */
-bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, bool has_md5) {
+bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t *the_config) {             //im moving the bool has md5
+    //its an invalid input
+    if (!lhd || !rhd) {
+        return true;
+    }
+
+    //if we want to ignore name case sensitivity we can use the strlwr
+    char *lhd_filename = get_file_name_from_path(lhd->path_and_name);
+    char *rhd_filename = get_file_name_from_path(rhd->path_and_name);
+
+    if (strcasecmp(lhd_filename, rhd_filename) != 0) {
+        return true;
+    }
+
+    bool has_md5 = the_config->uses_md5;
+
+    if (lhd->entry_type == FICHIER && rhd->entry_type == FICHIER) {
+
+        if (has_md5) {
+            if (lhd->entry_type != rhd->entry_type || lhd->md5sum != rhd->md5sum || lhd->mtime.tv_sec != rhd->mtime.tv_sec || lhd->mtime.tv_nsec != rhd->mtime.tv_nsec || lhd->size != rhd->size) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (lhd->entry_type != rhd->entry_type || lhd->mtime.tv_sec != rhd->mtime.tv_sec || lhd->mtime.tv_nsec != rhd->mtime.tv_nsec || lhd->size != rhd->size) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+    } else if (lhd->entry_type == DOSSIER && rhd->entry_type == DOSSIER) {
+        //might need to add other conditions on this return 
+        return lhd->mode != rhd->mode;
+    }
+
+    return true;
+
 }
 
 /*!
@@ -93,6 +131,82 @@ void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, c
  * Use sendfile to copy the file, mkdir to create the directory
  */
 void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {
+    if (!source_entry) {
+        printf("\nInvalid Input");
+    }
+    char destination[PATH_SIZE];
+    char filename[PATH_SIZE] = get_file_name_from_path(source_entry->path_and_name);
+    char destinationpath[PATH_SIZE] = the_config->destination;
+    strncpy(destination, destinationpath, PATH_SIZE - 1);  
+    //have to check on this later !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    destination[PATH_SIZE - 1] = '\0';
+     if (destination[strlen(destination) - 1] != '/') {
+        // If not, add it
+        strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
+        destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
+    }
+    // Concatenate the filename to the destination path
+    strncat(destination, filename, PATH_SIZE - strlen(destination) - 1);
+    destination[PATH_SIZE - 1] = '\0'; 
+
+    //destination file initialization
+
+    files_list_entry_t *destination_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
+    strncpy(destination_entry->path_and_name, destination,PATH_SIZE - 1) ;
+    destination[PATH_SIZE - 1] = '\0'; 
+    if (get_file_stats(destination_entry, the_config) == -1) {
+        printf("\nERROR GETTING FILE STATS");
+    }
+
+    if (source_entry->entry_type == 0) {
+        if (acces(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry,destination_entry, the_config)) {
+            int source_fd = open(source_entry->path_and_name, O_RDONLY);
+            int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+            if (source_fd == -1 || dest_fd == -1) {
+                printf("\nERROR OPENING FILES");
+            }
+
+            off_t offset = 0;
+            ssize_t bytes_copied = sendfile(dest_fd, source_fd, &offset, source_entry->size);
+
+            if (bytes_copied == -1) {
+                printf("\nERROR WHEN WRITTING IN THE DESTINATION FILE!");
+                close(source_fd);
+                close(dest_fd);
+                return;
+            }
+
+            struct timespec times[2];
+            times[0] = source_entry->mtime;  // atime
+            times[1] = source_entry->mtime;  // mtime
+
+            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, 0) == -1) {    //small problem with the AT_FDCWD!!!!!!!!!!!!!!!!!!!!!!!!!!
+                perror("Error setting modification time");
+                return;
+            }
+        }
+    } else if (source_entry->entry_type == 1) {
+
+        if(access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry, destination_entry, the_config)) {
+            if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {
+                perror("Error creating directory");
+                return;
+            }
+
+            struct timespec times[2];
+            times[0] = source_entry->mtime;
+            times[1] = source_entry->mtime;
+
+            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, AT_SYMLINK_NOFOLLOW) == -1) {   //normaly the AT_SYMLINK is only to assure ;
+                perror("Error setting access modes and mtime for directory");
+                return;
+            }
+
+        }
+    }
+
+
 }
 
 /*!
