@@ -28,37 +28,36 @@ void clear_files_list(files_list_t *list) {
  *  @return 0 if success, -1 else (out of memory)
  */
 files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
-    files_list_entry_t *current = list->head;
-    while (current != NULL) {
-        if (strcmp(current->file_path, file_path) == 0) {
-            return NULL;
+    for (int i = 0; i < list->count; i++) {
+        if (strcmp(list->entries[i].path, file_path) == 0) {
+            return 0;
         }
-        current = current->next;
     }
     files_list_entry_t *new_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
     if (new_entry == NULL) {
-        return NULL;
+        return -1;
     }
-    new_entry->file_path = strdup(file_path);
-    if (new_entry->file_path == NULL) {
+    new_entry->path = strdup(file_path);
+    if (new_entry->path == NULL) {
         free(new_entry);
-        return NULL;
+        return -1;
     }
-    new_entry->next = NULL;
-    current = list->head;
-    files_list_entry_t *prev = NULL;
-    while (current != NULL && strcmp(current->file_path, file_path) < 0) {
-        prev = current;
-        current = current->next;
+    if (get_file_stats(new_entry, &config) == -1) {
+        // Error getting file stats
+        free(new_entry->path);
+        free(new_entry);
+        return -1;
     }
-    if (prev == NULL) {
-        new_entry->next = list->head;
-        list->head = new_entry;
-    } else {
-        prev->next = new_entry;
-        new_entry->next = current;
+    int insert_index = 0;
+    while (insert_index < list->count && strcmp(list->entries[insert_index].path, file_path) < 0) {
+        insert_index++;
     }
-    return new_entry; 
+    for (int i = list->count; i > insert_index; i--) {
+        list->entries[i] = list->entries[i - 1];
+    }
+    list->entries[insert_index] = *new_entry;
+    list->count++;
+    return 0;
 }
 
 /*!
