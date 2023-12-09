@@ -29,7 +29,7 @@
 int get_file_stats(files_list_entry_t *entry, const configuration_t *config) {
     struct stat statbuf;
 
-    if (stat(entry->path, &statbuf) == -1) {
+    if (stat(entry->path_and_name, &statbuf) == -1) {         //chamged here for entry_type
         return -1;
     }
 
@@ -38,7 +38,7 @@ int get_file_stats(files_list_entry_t *entry, const configuration_t *config) {
 
     if (S_ISREG(statbuf.st_mode)) {
         entry->size = statbuf.st_size;
-        entry->type = FICHIER;
+        entry->entry_type = FICHIER;                     //here i think it should be entry_type
 
         // Calcule le MD5 uniquement si l'option est activée dans la configuration
         if (config->uses_md5) {
@@ -105,4 +105,9 @@ bool is_directory_writable(char *path_to_dir) {
         return false;
     }
     return true;
+}
+
+char *get_file_name_from_path(const char *path) {
+    char *last_separator = strrchr(path, '/');
+    return (last_separator != NULL) ? (last_separator + 1) : path;
 }
