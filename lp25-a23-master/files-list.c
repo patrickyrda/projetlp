@@ -43,7 +43,6 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
         return -1;
     }
     if (get_file_stats(new_entry, &config) == -1) {
-        // Error getting file stats
         free(new_entry->path);
         free(new_entry);
         return -1;
