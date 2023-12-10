@@ -34,7 +34,8 @@ int get_file_stats(files_list_entry_t *entry) {
     }
 
     entry->mode = statbuf.st_mode;
-    entry->mtime = statbuf.st_mtim.tv_nsec;
+    entry->mtime.tv_sec = statbuf.st_mtime;
+    
 
     if (S_ISREG(statbuf.st_mode)) {
         entry->size = statbuf.st_size;
@@ -45,7 +46,7 @@ int get_file_stats(files_list_entry_t *entry) {
         }
         
     } else if (S_ISDIR(statbuf.st_mode)) {
-        entry->type = DOSSIER;
+        entry->entry_type = DOSSIER;
     }
 
     return 0;
@@ -106,7 +107,7 @@ bool is_directory_writable(char *path_to_dir) {
 }
 //make error control of this function later!!!!!!
 
-char *get_file_name_from_path(const char *path) {
+char *get_file_name_from_path(char *path) {
     
     if (!path) {
         return NULL;

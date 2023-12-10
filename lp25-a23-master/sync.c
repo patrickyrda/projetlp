@@ -22,25 +22,29 @@
  */
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
     //implementation not considering multiprocess!!!!!!!
-    files_list_t *destination, *source, *differences;
+    files_list_t *destination = (files_list_t *)malloc(sizeof(files_list_t));
+    files_list_t *source = (files_list_t *)malloc(sizeof(files_list_t));
+    files_list_t *differences = (files_list_t *)malloc(sizeof(files_list_t));
     make_files_list(destination, the_config->destination);
     make_files_list(source, the_config->source);
-    //might have to initalize the differences list here!!!!!!!!!!!!!!
     
-    files_list_entry_t *destination_element = destination->head;
+    differences->head = NULL;
+    differences->tail = NULL;
+    
+    files_list_entry_t *source_element = source->head;
     files_list_entry_t *checkelem;
 
-    while (destination_element) {
-        checkelem = find_entry_by_name(destination, destination_element->path_and_name); //have to finish adding the parametters!!!!!!!!!
-        if (checkelem) {
-            add_entry_to_tail(differences,checkelem);
+    while (source_element) {
+        checkelem = find_entry_by_name(destination, source_element->path_and_name); 
+        if (!checkelem) {
+            add_entry_to_tail(differences,source_element);
         }
-        checkelem = checkelem->next;
+        source_element = source_element->next;
     }
-    free(checkelem);
+    
 
-    //considering the function will return null to it if its an empty list!!!!!!
-    if (differences) {
+    
+    if (differences->head) {
         
         files_list_entry_t *diftemp = differences->head;
 
@@ -48,13 +52,15 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
             copy_entry_to_destination(diftemp, the_config);
             diftemp = diftemp->next;
         } 
-    free(diftemp);
+    
+    } else {
+        printf("\nDifferences list was empty!");
     }
 
     clear_files_list(differences);
     clear_files_list(destination);
     clear_files_list(source);
-    free(destination_element);
+   
     
 }
 
@@ -118,7 +124,7 @@ void make_files_list(files_list_t *list, char *target_path) {
         return;
     }
     
-    files_list_t *path_list;
+    files_list_t *path_list = (files_list_t*)sizeof(files_list_t);
     make_list(path_list, target_path);
 
     files_list_entry_t *temp = path_list->head;
