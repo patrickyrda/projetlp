@@ -21,16 +21,41 @@
  * @param p_context is a pointer to the processes context
  */
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
+    //implementation not considering multiprocess!!!!!!!
     files_list_t *destination, *source, *differences;
     make_files_list(destination, the_config->destination);
     make_files_list(source, the_config->source);
+    //might have to initalize the differences list here!!!!!!!!!!!!!!
     
     files_list_entry_t *destination_element = destination->head;
+    files_list_entry_t *checkelem;
 
     while (destination_element) {
+        checkelem = find_entry_by_name(destination_element, destination_element->path_and_name); //have to finish adding the parametters!!!!!!!!!
+        if (checkelem) {
+            add_entry_to_tail(differences,checkelem);
+        }
+        checkelem = checkelem->next;
+    }
+    free(checkelem);
+
+    //considering the function will return null to it if its an empty list!!!!!!
+    if (differences) {
         
+        files_list_entry_t *diftemp = differences->head;
+
+        while (diftemp) {
+            copy_entry_to_destination(diftemp, the_config);
+            diftemp = diftemp->next;
+        } 
+    free(diftemp);
     }
 
+    clear_files_list(differences);
+    clear_files_list(destination);
+    clear_files_list(source);
+    free(destination_element);
+    
 }
 
 /*!
@@ -253,10 +278,6 @@ void make_list(files_list_t *list, char *target) {
     while ((entry = get_next_entry(dir)) != NULL) {
         char file_path[PATH_SIZE];
         snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
-<<<<<<< HEAD
-        add_file_entry(list, file_path);
-        if (entry->d_type == DT_DIR) {                  //look to what is this one !!!!!!!!
-=======
 
         // Ajoute entree a queue de liste
         if (add_entry_to_tail(list, file_path) == -1) {
@@ -266,7 +287,6 @@ void make_list(files_list_t *list, char *target) {
         }
 
         if (entry->d_type == DT_DIR) {
->>>>>>> origin/sync_utility
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 make_list(list, file_path);
             }
