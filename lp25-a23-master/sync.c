@@ -234,17 +234,39 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param target is the target dir whose content must be listed
  */
 void make_list(files_list_t *list, char *target) {
-    DIR *dir = open_dir(target);
-    if (dir == NULL) {
-        perror("Erreur");
+     // Verification de la liste afin de voir si elle est vide
+    if (!list) {
+        fprintf(stderr, "Erreur \n");
         return;
     }
+
+    list->head = NULL;
+    list->tail = NULL;
+
+    DIR *dir = open_dir(target);
+    if (dir == NULL) {
+        perror("Erreur ouverture repertoire");
+        return;
+    }
+
     struct dirent *entry;
     while ((entry = get_next_entry(dir)) != NULL) {
         char file_path[PATH_SIZE];
         snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
+<<<<<<< HEAD
         add_file_entry(list, file_path);
         if (entry->d_type == DT_DIR) {                  //look to what is this one !!!!!!!!
+=======
+
+        // Ajoute entree a queue de liste
+        if (add_entry_to_tail(list, file_path) == -1) {
+            clear_files_list(list);
+            closedir(dir);
+            return;
+        }
+
+        if (entry->d_type == DT_DIR) {
+>>>>>>> origin/sync_utility
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 make_list(list, file_path);
             }
