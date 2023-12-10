@@ -30,8 +30,7 @@ void clear_files_list(files_list_t *list) {
  *  @return 0 if success, -1 else (out of memory)
  */
 int add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton 
-    files_list_t *temp = list;
-    files_list_t *exist_check = find_entry_by_name(list, file_path);
+    files_list_entry_t *exist_check = find_entry_by_name(list, file_path);
 
     if (exist_check) {
         return 0;    

@@ -10,7 +10,7 @@
 #include <sys/sendfile.h>
 #include <unistd.h>
 #include <sys/msg.h>
-
+#include <stdlib.h>
 #include <stdio.h>
 
 /*!
@@ -31,7 +31,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     files_list_entry_t *checkelem;
 
     while (destination_element) {
-        checkelem = find_entry_by_name(destination_element, destination_element->path_and_name); //have to finish adding the parametters!!!!!!!!!
+        checkelem = find_entry_by_name(destination, destination_element->path_and_name); //have to finish adding the parametters!!!!!!!!!
         if (checkelem) {
             add_entry_to_tail(differences,checkelem);
         }
@@ -71,7 +71,7 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t 
         return true;
     }
 
-    //if we want to ignore name case sensitivity we can use the strlwr
+   
     char *lhd_filename = get_file_name_from_path(lhd->path_and_name);
     char *rhd_filename = get_file_name_from_path(rhd->path_and_name);
 
@@ -112,7 +112,26 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t 
  * @param target_path is the path whose files to list
  */
 void make_files_list(files_list_t *list, char *target_path) {
+
+    if (!list) {
+        perror("\nNULL LIST WAS PROVIDED!");
+        return;
+    }
     
+    files_list_t *path_list;
+    make_list(path_list, target_path);
+
+    files_list_entry_t *temp = path_list->head;
+
+    while (temp) {
+        if (add_file_entry(list, temp->path_and_name) == -1) {
+            perror("\nERROR WITH add_file_entry");
+            clear_files_list(list);
+            clear_files_list(path_list);
+            return;
+        }
+        temp = temp->next;
+    }
 }
 
 /*!
@@ -131,17 +150,18 @@ void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, c
  * Pay attention to the path so that the prefixes are not repeated from the source to the destination
  * Use sendfile to copy the file, mkdir to create the directory
  */
-void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {
+void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {          //theres an error here!!!
     if (!source_entry) {
         printf("\nInvalid Input");
     }
     
-    char destination[PATH_SIZE];
-    char filename[PATH_SIZE] = get_file_name_from_path(source_entry->path_and_name);
-    char destinationpath[PATH_SIZE] = the_config->destination;
-    strncpy(destination, destinationpath, PATH_SIZE - 1);  
+    char destination[PATH_SIZE], filename[PATH_SIZE];
+    strncpy(destination, the_config->destination, PATH_SIZE - 1);
     destination[PATH_SIZE - 1] = '\0';
+    strncpy(filename, get_file_name_from_path(source_entry->path_and_name), PATH_SIZE - 1);
+    filename[PATH_SIZE - 1] = '\0';
 
+    //could use snprintf here 
     if (destination[strlen(destination) - 1] != '/') {
         strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
         destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
@@ -267,7 +287,6 @@ void make_list(files_list_t *list, char *target) {                             /
         if (add_entry_to_tail(list, new_entry) == -1) {
             perror("\nERROR IN FUCNTION add_entry_to_tail!");
         }
-        
 
         /*new_entry->next = NULL;
         new_entry->prev = list->tail;
