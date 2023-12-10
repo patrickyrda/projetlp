@@ -26,10 +26,10 @@
  *   - entry type (DOSSIER)
  * @return -1 in case of error, 0 else
  */
-int get_file_stats(files_list_entry_t *entry, configuration_t *config) {
+int get_file_stats(files_list_entry_t *entry) {
     struct stat statbuf;
 
-    if (stat(entry->path_and_name, &statbuf) == -1) {         //chamged here for entry_type
+    if (stat(entry->path_and_name, &statbuf) == -1) {       
         return -1;
     }
 
@@ -38,14 +38,12 @@ int get_file_stats(files_list_entry_t *entry, configuration_t *config) {
 
     if (S_ISREG(statbuf.st_mode)) {
         entry->size = statbuf.st_size;
-        entry->entry_type = FICHIER;                     //here i think it should be entry_type
-
-        // Calcule le MD5 uniquement si l'option est activée dans la configuration
-        if (config->uses_md5) {
-            if (compute_file_md5(entry) == -1) {
-                return -1;
-            }
+        entry->entry_type = FICHIER;                     
+      
+        if (compute_file_md5(entry) == -1) {
+            return -1;
         }
+        
     } else if (S_ISDIR(statbuf.st_mode)) {
         entry->type = DOSSIER;
     }
