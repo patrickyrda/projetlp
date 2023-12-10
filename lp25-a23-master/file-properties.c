@@ -111,9 +111,9 @@ bool is_directory_writable(char *path_to_dir) {
 char *get_file_name_from_path(const char *path) {
     
     if (!path) {
-        return '0';
+        return NULL;
     }
-    
+
     char *last_separator = strrchr(path, '/');
     return (last_separator != NULL) ? (last_separator + 1) : path;
 }

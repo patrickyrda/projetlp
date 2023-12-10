@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <file-properties.h>
+#include <defines.h>
 
 #include <stdio.h>
 
@@ -27,37 +29,12 @@ void clear_files_list(files_list_t *list) {
  *  @param file_path the full path (from the root of the considered tree) of the file
  *  @return 0 if success, -1 else (out of memory)
  */
-files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
-    for (int i = 0; i < list->count; i++) {
-        if (strcmp(list->entries[i].path, file_path) == 0) {
-            return 0;
-        }
-    }
-    files_list_entry_t *new_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
-    if (new_entry == NULL) {
-        return -1;
-    }
-    new_entry->path = strdup(file_path);
-    if (new_entry->path == NULL) {
-        free(new_entry);
-        return -1;
-    }
-    if (get_file_stats(new_entry, &config) == -1) {
-        free(new_entry->path);
-        free(new_entry);
-        return -1;
-    }
-    int insert_index = 0;
-    while (insert_index < list->count && strcmp(list->entries[insert_index].path, file_path) < 0) {
-        insert_index++;
-    }
-    for (int i = list->count; i > insert_index; i--) {
-        list->entries[i] = list->entries[i - 1];
-    }
-    list->entries[insert_index] = *new_entry;
-    list->count++;
-    return 0;
+files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton 
+    files_list_t *temp = list;
+    files_list_t *existcheck = find_entry_by_name(list, file_path);
 }
+
+
 
 /*!
  * @brief add_entry_to_tail adds an entry directly to the tail of the list
@@ -68,20 +45,24 @@ files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {
  * @return 0 in case of success, -1 else
  */
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
-     if (list == NULL || entry == NULL) {
-        return -1; 
+    // Vérification paramètres
+    if (!list || !entry) {
+        return -1;
     }
-    if (list->head == NULL) {
+
+    // Ajout fin de liste
+    if (list->tail == NULL) {
+        // La liste est vide
         list->head = entry;
+        list->tail = entry;
     } else {
-        files_list_entry_t* current = list->head;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = entry;
+        // Ajout à la queue
+        entry->prev = list->tail;
+        list->tail->next = entry;
+        list->tail = entry;
     }
-    entry->next = NULL;
-    return 0; 
+    return 0 ;
+
 }
     
 
@@ -94,20 +75,41 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
  *  @param start_of_dest the position of the name of the file in the destination dir (removing the dest path)
  *  @return a pointer to the element found, NULL if none were found.
  */
-files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path, size_t start_of_src, size_t start_of_dest) {
-    files_list_entry_t *current = list->head;
-    while (current != NULL) {
-        int cmp_src = strcmp(current->file_path + start_of_src, file_path + start_of_src);
-        int cmp_dest = strcmp(current->file_path + start_of_dest, file_path + start_of_dest);
-        if (cmp_src == 0 && cmp_dest == 0) {
-            return current; 
-        } else if (cmp_src > 0 || cmp_dest > 0) {
-            break;
-        }
-        current = current->next; 
+files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path) {    //MOVED BOTH OF SIZE_T VARIABLES
+    
+    if (!list || !file_path) {
+        return NULL;
     }
-    return NULL;
+    
+    files_list_entry_t *current = list->head;
+    char *current_name = (char*)malloc(PATH_SIZE);
+    char *file_path_name = (char*)malloc(PATH_SIZE);
+    if (!current_name || !file_path_name) {
+        perror("\nFAILED ALLOCATING MEMORY TO FILE NAME VARIABLES");
+        free(current_name);
+        free(file_path_name);   
+        return NULL;
+    }
+    strncpy(file_path_name, get_file_name_from_path(file_path), PATH_SIZE);
+    file_path_name[PATH_SIZE - 1] = '\0';
+
+    while (current) {
+        strncpy(current_name, get_file_name_from_path(current->path_and_name), PATH_SIZE);
+        current_name[PATH_SIZE - 1] = '\0';
+        
+        if (strcmp(current_name, file_path_name) == 0) {
+            return current;
+        }
+
+        current = current->next;
+    }
+     
+    free(current_name);
+    free(file_path_name);
+    return NULL;   //the file was not found 
 }
+
+
 
 /*!
  * @brief display_files_list displays a files list
