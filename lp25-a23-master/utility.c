@@ -1,5 +1,6 @@
 #include <defines.h>
 #include <string.h>
+#include <stdio.h>
 
 /*!
  * @brief concat_path concatenates suffix to prefix into result

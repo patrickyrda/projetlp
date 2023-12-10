@@ -161,6 +161,8 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
         printf("\nInvalid Input");
     }
     
+
+    //need to use the concat_path function here !!!!!!!
     char destination[PATH_SIZE], filename[PATH_SIZE];
     strncpy(destination, the_config->destination, PATH_SIZE - 1);
     destination[PATH_SIZE - 1] = '\0';
