@@ -21,6 +21,16 @@
  * @param p_context is a pointer to the processes context
  */
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
+    files_list_t *destination, *source, *differences;
+    make_files_list(destination, the_config->destination);
+    make_files_list(source, the_config->source);
+    
+    files_list_entry_t *destination_element = destination->head;
+
+    while (destination_element) {
+        
+    }
+
 }
 
 /*!
@@ -30,7 +40,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
  * @has_md5 a value to enable or disable MD5 sum check
  * @return true if both files are not equal, false else
  */
-bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t *the_config) {             //im moving the bool has md5
+bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t *the_config) {             //im moving the bool has md5, might also move the name control!!
     //its an invalid input
     if (!lhd || !rhd) {
         return true;
@@ -49,7 +59,7 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t 
     if (lhd->entry_type == FICHIER && rhd->entry_type == FICHIER) {
 
         if (has_md5) {
-            if (lhd->entry_type != rhd->entry_type || lhd->md5sum != rhd->md5sum || lhd->mtime.tv_sec != rhd->mtime.tv_sec || lhd->mtime.tv_nsec != rhd->mtime.tv_nsec || lhd->size != rhd->size) {
+            if (lhd->entry_type != rhd->entry_type || memcmp(lhd->md5sum, rhd->md5sum, sizeof(lhd->md5sum)) != 0 || lhd->mtime.tv_sec != rhd->mtime.tv_sec || lhd->mtime.tv_nsec != rhd->mtime.tv_nsec || lhd->size != rhd->size) {
                 return true;
             } else {
                 return false;
@@ -156,15 +166,19 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     destination[PATH_SIZE - 1] = '\0'; 
     if (get_file_stats(destination_entry, the_config) == -1) {
         printf("\nERROR GETTING FILE STATS");
+        free(destination_entry);
+        return;
     }
 
-    if (source_entry->entry_type == 0) {
-        if (acces(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry,destination_entry, the_config)) {
+    if (source_entry->entry_type == FICHIER) {
+        if (access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry,destination_entry, the_config)) {
             int source_fd = open(source_entry->path_and_name, O_RDONLY);
             int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
             if (source_fd == -1 || dest_fd == -1) {
                 printf("\nERROR OPENING FILES");
+                free(destination_entry);
+                return;
             }
 
             off_t offset = 0;
@@ -174,6 +188,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
                 printf("\nERROR WHEN WRITTING IN THE DESTINATION FILE!");
                 close(source_fd);
                 close(dest_fd);
+                free(destination_entry);
                 return;
             }
 
@@ -183,10 +198,11 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
 
             if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, 0) == -1) {    //small problem with the AT_FDCWD!!!!!!!!!!!!!!!!!!!!!!!!!!
                 perror("Error setting modification time");
+                free(destination_entry);
                 return;
             }
         }
-    } else if (source_entry->entry_type == 1) {
+    } else if (source_entry->entry_type == DOSSIER) {
 
         if(access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry, destination_entry, the_config)) {
             if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {
@@ -200,12 +216,13 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
 
             if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, AT_SYMLINK_NOFOLLOW) == -1) {   //normaly the AT_SYMLINK is only to assure ;
                 perror("Error setting access modes and mtime for directory");
+                free(destination_entry);
                 return;
             }
 
         }
     }
-
+    free(destination_entry);
 
 }
 
@@ -224,10 +241,10 @@ void make_list(files_list_t *list, char *target) {
     }
     struct dirent *entry;
     while ((entry = get_next_entry(dir)) != NULL) {
-        char file_path[PATH_MAX];
-        snprintf(file_path, PATH_MAX, "%s/%s", target, entry->d_name);
+        char file_path[PATH_SIZE];
+        snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
         add_file_entry(list, file_path);
-        if (entry->d_type == DT_DIR) {
+        if (entry->d_type == DT_DIR) {                  //look to what is this one !!!!!!!!
             if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
                 make_list(list, file_path);
             }

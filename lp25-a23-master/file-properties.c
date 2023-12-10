@@ -26,7 +26,7 @@
  *   - entry type (DOSSIER)
  * @return -1 in case of error, 0 else
  */
-int get_file_stats(files_list_entry_t *entry, const configuration_t *config) {
+int get_file_stats(files_list_entry_t *entry, configuration_t *config) {
     struct stat statbuf;
 
     if (stat(entry->path_and_name, &statbuf) == -1) {         //chamged here for entry_type
@@ -106,8 +106,14 @@ bool is_directory_writable(char *path_to_dir) {
     }
     return true;
 }
+//make error control of this function later!!!!!!
 
 char *get_file_name_from_path(const char *path) {
+    
+    if (!path) {
+        return '0';
+    }
+    
     char *last_separator = strrchr(path, '/');
     return (last_separator != NULL) ? (last_separator + 1) : path;
 }
