@@ -50,14 +50,25 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
         return -1;
     }
 
-    // Ajout fin de liste
-    if (list->tail == NULL) {
-        // La liste est vide
-        list->head = entry;
-        list->tail = entry;
-    } else {
-        // Ajout à la queue
-        entry->prev = list->tail;
+    files_list_entry_t *new_entry = entry;
+    new_entry->prev = NULL;
+    new_entry->next = NULL;
+
+    // I am not sure if all those controlls are need since most likely the funciton will be used in list provided by a process , might have to simplify it later 
+    if (!list->tail && !list->head) {
+        
+        list->head = new_entry;
+        list->tail = new_entry;
+    } else if (!list->tail) {
+        list->tail = new_entry;
+        list->head->next = new_entry;
+        new_entry->prev = list->head; 
+    } else if (!list->head) { 
+        new_entry->prev = list->tail;
+        list->head = list->tail;
+        list->tail = new_entry;
+    } else { 
+        new_entry->prev = list->tail;
         list->tail->next = entry;
         list->tail = entry;
     }
