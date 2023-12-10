@@ -112,41 +112,7 @@ bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t 
  * @param target_path is the path whose files to list
  */
 void make_files_list(files_list_t *list, char *target_path) {
-    if (list == NULL) {
-        fprintf(stderr, "Error: Invalid pointer to files_list_t\n");
-        return;
-    }
-    DIR *dir = opendir(target_path);
-    if (dir == NULL) {
-        perror("Error opening directory");
-        return;
-    }
-    list->files = NULL;
-    list->count = 0;
     
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        // Ignorer les entrées spéciales "." et ".."
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        char *file_name = strdup(entry->d_name);
-        if (file_name == NULL) {
-            perror("Error allocating memory for file name");
-            closedir(dir);
-            return;
-        }
-        list->files = realloc(list->files, (list->count + 1) * sizeof(char *));
-        if (list->files == NULL) {
-            perror("Error reallocating memory for files list");
-            free(file_name);
-            closedir(dir);
-            return;
-        }
-        list->files[list->count] = file_name;
-        list->count++;
-    }
-    closedir(dir);
 }
 
 /*!
@@ -177,7 +143,6 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     destination[PATH_SIZE - 1] = '\0';
 
     if (destination[strlen(destination) - 1] != '/') {
-        // If not, add it
         strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
         destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
     }
@@ -192,7 +157,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     strncpy(destination_entry->path_and_name, destination,PATH_SIZE - 1) ;
     destination[PATH_SIZE - 1] = '\0'; 
     
-    if (get_file_stats(destination_entry, the_config) == -1) {
+    if (get_file_stats(destination_entry) == -1) {
         printf("\nERROR GETTING FILE STATS");
         free(destination_entry);
         return;
@@ -265,12 +230,9 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
 void make_list(files_list_t *list, char *target) {                             //should use add entry! 
      // Verification de la liste afin de voir si elle est vide
     if (!list) {
-        fprintf(stderr, "Erreur \n");
+        perror("\nNULL LIST WAS PROVIDED!");
         return;
     }
-
-    list->head = NULL;
-    list->tail = NULL;
 
     DIR *dir = open_dir(target);
     if (dir == NULL) {
@@ -278,22 +240,45 @@ void make_list(files_list_t *list, char *target) {                             /
         return;
     }
 
+    list->head = NULL;
+    list->tail = NULL;
+
     struct dirent *entry;
     while ((entry = get_next_entry(dir)) != NULL) {
+       
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+        
         char file_path[PATH_SIZE];
         snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
 
-        // Ajoute entree a queue de liste
-        if (add_entry_to_tail(list, file_path) == -1) {
-            clear_files_list(list);
+        files_list_entry_t *new_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
+        
+        if (!new_entry) {
+            perror("Error allocating memory for new_entry");
             closedir(dir);
             return;
         }
 
+        strncpy(new_entry->path_and_name, file_path, PATH_SIZE - 1);
+        new_entry->path_and_name[PATH_SIZE - 1] = '\0';
+        
+        new_entry->next = NULL;
+        new_entry->prev = list->tail;
+
+        if (list->head == NULL) {
+            list->head = new_entry;
+        }
+
+        if (list->tail != NULL) {
+            list->tail->next = new_entry;
+        }
+
+        list->tail = new_entry;
+
         if (entry->d_type == DT_DIR) {
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-                make_list(list, file_path);
-            }
+            make_list(list, file_path);
         }
     }
     closedir(dir);
