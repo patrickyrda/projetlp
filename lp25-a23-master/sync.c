@@ -263,8 +263,13 @@ void make_list(files_list_t *list, char *target) {                             /
 
         strncpy(new_entry->path_and_name, file_path, PATH_SIZE - 1);
         new_entry->path_and_name[PATH_SIZE - 1] = '\0';
+
+        if (add_entry_to_tail(list, new_entry) == -1) {
+            perror("\nERROR IN FUCNTION add_entry_to_tail!");
+        }
         
-        new_entry->next = NULL;
+
+        /*new_entry->next = NULL;
         new_entry->prev = list->tail;
 
         if (list->head == NULL) {
@@ -275,7 +280,7 @@ void make_list(files_list_t *list, char *target) {                             /
             list->tail->next = new_entry;
         }
 
-        list->tail = new_entry;
+        list->tail = new_entry;*/
 
         if (entry->d_type == DT_DIR) {
             make_list(list, file_path);
