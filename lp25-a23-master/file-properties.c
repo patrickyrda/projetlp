@@ -1,5 +1,5 @@
 #include <file-properties.h>
-
+#include <openssl/md5.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <openssl/evp.h>
@@ -35,7 +35,7 @@ int get_file_stats(files_list_entry_t *entry) {
 
     entry->mode = statbuf.st_mode;
     entry->mtime.tv_sec = statbuf.st_mtime;
-    
+
 
     if (S_ISREG(statbuf.st_mode)) {
         entry->size = statbuf.st_size;
@@ -59,7 +59,7 @@ int get_file_stats(files_list_entry_t *entry) {
  * Use libcrypto functions from openssl/evp.h
  */
 int compute_file_md5(files_list_entry_t *entry) {
-    FILE *file = fopen(entry->path, "rb");
+    FILE *file = fopen(entry->path_and_name, "rb");
     if (!file) {
         return -1;
     }
