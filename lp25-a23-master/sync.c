@@ -169,13 +169,14 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     if (!source_entry) {
         printf("\nInvalid Input");
     }
+    
     char destination[PATH_SIZE];
     char filename[PATH_SIZE] = get_file_name_from_path(source_entry->path_and_name);
     char destinationpath[PATH_SIZE] = the_config->destination;
     strncpy(destination, destinationpath, PATH_SIZE - 1);  
-    //have to check on this later !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     destination[PATH_SIZE - 1] = '\0';
-     if (destination[strlen(destination) - 1] != '/') {
+
+    if (destination[strlen(destination) - 1] != '/') {
         // If not, add it
         strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
         destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
@@ -187,8 +188,10 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     //destination file initialization
 
     files_list_entry_t *destination_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
+    
     strncpy(destination_entry->path_and_name, destination,PATH_SIZE - 1) ;
     destination[PATH_SIZE - 1] = '\0'; 
+    
     if (get_file_stats(destination_entry, the_config) == -1) {
         printf("\nERROR GETTING FILE STATS");
         free(destination_entry);
@@ -258,7 +261,8 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param list is a pointer to the list that will be built
  * @param target is the target dir whose content must be listed
  */
-void make_list(files_list_t *list, char *target) {
+//have to take care when initialising the tial of the list!!!
+void make_list(files_list_t *list, char *target) {                             //should use add entry! 
      // Verification de la liste afin de voir si elle est vide
     if (!list) {
         fprintf(stderr, "Erreur \n");

@@ -29,9 +29,58 @@ void clear_files_list(files_list_t *list) {
  *  @param file_path the full path (from the root of the considered tree) of the file
  *  @return 0 if success, -1 else (out of memory)
  */
-files_list_entry_t *add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton 
+int add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton 
     files_list_t *temp = list;
-    files_list_t *existcheck = find_entry_by_name(list, file_path);
+    files_list_t *exist_check = find_entry_by_name(list, file_path);
+
+    if (exist_check) {
+        return 0;    
+    }
+
+    files_list_entry_t *new_entry = (files_list_entry_t*)malloc(sizeof(files_list_entry_t));
+
+    if (!new_entry) {
+        perror("\nFAILED TO ALLOCATE MEMORY FOR NEW_ENTRY");
+        return 1;
+    }
+
+    strncpy(new_entry->path_and_name, file_path, PATH_SIZE);
+    new_entry->path_and_name[PATH_SIZE - 1] = '\0';
+    
+    if (get_file_stats(new_entry) == -1) {
+        perror("\nFAILED TO ASSIGN VALUES TO new_entry!");
+        return -1;
+    }
+
+    new_entry->next = NULL;
+    new_entry->prev = NULL;
+
+    files_list_entry_t *current = list->head;
+
+    //the tail will be implemented if it does not exist by make_list
+    if (!current) {
+        list->head = new_entry;
+    } else if (strcmp(new_entry->path_and_name, current->path_and_name) < 0) {
+        new_entry->next = list->head;
+        list->head->prev = new_entry;
+        list->head = new_entry;
+    } else {
+        while (current->next && strcmp(new_entry->path_and_name, current->next->path_and_name) > 0) {
+            current = current->next;
+        }
+        if (!current->next) {
+            current->next = new_entry;
+            new_entry->prev = current;
+            list->tail = new_entry; 
+        }
+        new_entry->next = current->next;
+        new_entry->prev = current;
+        current->next = new_entry;
+        current->next->prev = new_entry;  
+    }
+    //succes
+    return 0;
+
 }
 
 

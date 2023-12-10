@@ -23,7 +23,7 @@ typedef struct {
 } files_list_t;
 
 void clear_files_list(files_list_t *list);
-files_list_entry_t *add_file_entry(files_list_t *list, char *file_path);
+int add_file_entry(files_list_t *list, char *file_path);
 int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry);
 files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path); //moved both size_t because of the usage of the funciton get_file_name_from_path
 void display_files_list(files_list_t *list);
