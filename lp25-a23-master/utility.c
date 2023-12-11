@@ -1,6 +1,8 @@
 #include <defines.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 /*!
  * @brief concat_path concatenates suffix to prefix into result
@@ -13,28 +15,27 @@
  */
 char *concat_path(char *result, char *prefix, char *suffix) {
     // Vérifie si les entrées ne sont pas NULL
-    if (!prefix || !suffix || !result) {
+    if (!prefix || !suffix ) {
         return NULL;
     }
 
     // Calcul de la longueur nécessaire pour le résultat, +1 pour la barre oblique éventuelle, +1 pour '\0'
     size_t needed_length = strlen(prefix) + strlen(suffix) + 2;
-
     // Vérifie si la longueur dépasse PATH_SIZE
     if (needed_length > PATH_SIZE) {
         fprintf(stderr, "Erreur: chemin concaténé trop long.\n");
         return NULL;
     }
+    
+    result = (char*)malloc(needed_length * sizeof(char));
 
-    // Copie le préfixe dans le résultat
     strcpy(result, prefix);
+    result[strlen(result)] = '\0';
 
-    // Ajoute une barre oblique si nécessaire
-    if (prefix[strlen(prefix) - 1] != '/') {
+    if (result[strlen(result) - 1] != '/') {
         strcat(result, "/");
     }
 
-    // Concatène le suffixe
     strcat(result, suffix);
 
     return result;
