@@ -58,7 +58,7 @@ int get_file_stats(files_list_entry_t *entry) {
  * @return -1 in case of error, 0 else
  * Use libcrypto functions from openssl/evp.h
  */
-int compute_file_md5(files_list_entry_t *entry) {
+/*int compute_file_md5(files_list_entry_t *entry) {
     FILE *file = fopen(entry->path_and_name, "rb");
     if (!file) {
         return -1;
@@ -78,6 +78,37 @@ int compute_file_md5(files_list_entry_t *entry) {
     for(int i = 0; i < MD5_DIGEST_LENGTH; i++) {
         sprintf(&entry->md5sum[i*2], "%02x", (unsigned int)c[i]);
     }
+
+    fclose(file);
+    return 0;
+}*/
+int compute_file_md5(files_list_entry_t *entry) {
+    FILE *file = fopen(entry->path_and_name, "rb");
+    if (!file) {
+        return -1;
+    }
+
+    unsigned char c[MD5_DIGEST_LENGTH];
+    EVP_MD_CTX *mdContext;
+    const EVP_MD *md = EVP_md5(); // Use MD5 algorithm
+    int bytes;
+    unsigned char data[1024];
+
+    mdContext = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(mdContext, md, NULL);
+
+    while ((bytes = fread(data, 1, 1024, file)) != 0) {
+        EVP_DigestUpdate(mdContext, data, bytes);
+    }
+
+    EVP_DigestFinal_ex(mdContext, c, NULL);
+    EVP_MD_CTX_free(mdContext);
+
+    for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+        // Convert two hexadecimal characters to one byte
+        sscanf((char*)&c[i * 2], "%2hhx", &entry->md5sum[i]);
+    }
+    entry->md5sum[MD5_DIGEST_LENGTH] = '\0';  // Add null terminator
 
     fclose(file);
     return 0;
