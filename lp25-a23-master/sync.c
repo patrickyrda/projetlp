@@ -23,8 +23,20 @@
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
     //implementation not considering multiprocess!!!!!!!
     files_list_t *destination = (files_list_t *)malloc(sizeof(files_list_t));
+    if (!destination) {
+        perror("\nFailed allocating memory to destination list");
+        return;
+    }
     files_list_t *source = (files_list_t *)malloc(sizeof(files_list_t));
+    if (!source) {
+        perror("\nFailed allocating memory to source list");
+        return;
+    }
     files_list_t *differences = (files_list_t *)malloc(sizeof(files_list_t));
+    if (!differences) {
+        perror("\nFailed allocating memory to differences list");
+        return;
+    }
     make_files_list(destination, the_config->destination);
     make_files_list(source, the_config->source);
     
@@ -125,6 +137,10 @@ void make_files_list(files_list_t *list, char *target_path) {
     }
     
     files_list_t *path_list = (files_list_t*)sizeof(files_list_t);
+    if (!path_list){
+        perror("\nERROR OPPENING path_list!!");
+        return;
+    }
     make_list(path_list, target_path);
 
     files_list_entry_t *temp = path_list->head;
@@ -214,7 +230,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             off_t offset = 0;
             ssize_t bytes_copied = sendfile(dest_fd, source_fd, &offset, source_entry->size);
 
-            if (bytes_copied == -1) {   
+            if (bytes_copied == -1) {
                 printf("\nERROR WHEN WRITTING IN THE DESTINATION FILE!");
                 close(source_fd);
                 close(dest_fd);
@@ -297,6 +313,7 @@ void make_list(files_list_t *list, char *target) {
             closedir(dir);
             return;
         }
+        //could use concat path here as well
 
         strncpy(new_entry->path_and_name, file_path, PATH_SIZE - 1);
         new_entry->path_and_name[PATH_SIZE - 1] = '\0';
@@ -332,13 +349,13 @@ void make_list(files_list_t *list, char *target) {
  */
 
 DIR *open_dir(char *path) {
-    DIR *dir = opendir(path); // Tentative d'ouverture du répertoire
+    DIR *dir = opendir(path); 
 
     if (dir == NULL) {
-        perror("Erreur lors de l'ouverture du répertoire"); // Affiche l'erreur en cas d'échec
+        perror("Erreur lors de l'ouverture du répertoire"); 
     }
 
-    return dir; // Renvoie le pointeur de DIR ou NULL si échec
+    return dir; 
 }
 
 /*!

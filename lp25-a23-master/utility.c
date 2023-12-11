@@ -28,6 +28,10 @@ char *concat_path(char *result, char *prefix, char *suffix) {
     }
     
     result = (char*)malloc(needed_length * sizeof(char));
+    if (!result) {
+        perror("\nERROR ALLOCATING MEMORY TO result");
+        return NULL;
+    }
 
     strcpy(result, prefix);
     result[strlen(result)] = '\0';
