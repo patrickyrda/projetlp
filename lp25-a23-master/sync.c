@@ -269,7 +269,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
 
         }
     }
-    free(destination_entry);
+    //free(destination_entry);
 
 }
 
@@ -330,9 +330,6 @@ void make_list(files_list_t *list, char *target) {
     }
     closedir(dir);
 }
-/*if (entry->d_type == DT_DIR) {
-            make_list(list, file_path);
-        }*/
 
 /*!
  * @brief open_dir opens a dir

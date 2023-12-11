@@ -44,6 +44,7 @@ int add_file_entry(files_list_t *list, char *file_path) {     //ask about the ty
         return -1;
     }
 
+    //maybe add PATH_SIZE here instead of strlen
     strncpy(new_entry->path_and_name, file_path, strlen(file_path) + 1);
     new_entry->path_and_name[strlen(file_path)] = '\0';
 
