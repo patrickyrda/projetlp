@@ -156,34 +156,41 @@ void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, c
  * Pay attention to the path so that the prefixes are not repeated from the source to the destination
  * Use sendfile to copy the file, mkdir to create the directory
  */
-void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {          //theres an error here!!!
+void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {          //theres an error here!!! nned to check the logic as well, need corrections for sure!
     if (!source_entry) {
         printf("\nInvalid Input");
     }
     
 
     //need to use the concat_path function here !!!!!!!
-    char destination[PATH_SIZE], filename[PATH_SIZE];
+    /*char destination[PATH_SIZE], filename[PATH_SIZE];
     strncpy(destination, the_config->destination, PATH_SIZE - 1);
     destination[PATH_SIZE - 1] = '\0';
     strncpy(filename, get_file_name_from_path(source_entry->path_and_name), PATH_SIZE - 1);
-    filename[PATH_SIZE - 1] = '\0';
+    filename[PATH_SIZE - 1] = '\0';*/
+    char destination_path[PATH_SIZE];
+    char filename[PATH_SIZE];
+    strncpy(destination_path, the_config->destination, PATH_SIZE - 1);
+    strncpy(filename, get_file_name_from_path(source_entry->path_and_name), PATH_SIZE - 1);
+    char *destination = NULL;
+    destination = concat_path(destination, destination_path, filename);
+    destination[sizeof(destination) - 1] = '\0'; //not sure if needed
 
     //could use snprintf here 
-    if (destination[strlen(destination) - 1] != '/') {
+    /*if (destination[strlen(destination) - 1] != '/') {
         strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
         destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
     }
     // Concatenate the filename to the destination path
     strncat(destination, filename, PATH_SIZE - strlen(destination) - 1);
-    destination[PATH_SIZE - 1] = '\0'; 
+    destination[PATH_SIZE - 1] = '\0'; */
 
     //destination file initialization
 
     files_list_entry_t *destination_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
     
-    strncpy(destination_entry->path_and_name, destination,PATH_SIZE - 1) ;
-    destination[PATH_SIZE - 1] = '\0'; 
+    strncpy(destination_entry->path_and_name, destination,sizeof(destination) - 1) ;
+    
     
     if (get_file_stats(destination_entry) == -1) {
         printf("\nERROR GETTING FILE STATS");
@@ -191,10 +198,12 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
         return;
     }
 
+    destination_entry->mode = source_entry->mode;
+
     if (source_entry->entry_type == FICHIER) {
         if (access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry,destination_entry, the_config)) {
             int source_fd = open(source_entry->path_and_name, O_RDONLY);
-            int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+            int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, destination_entry->mode);
 
             if (source_fd == -1 || dest_fd == -1) {
                 printf("\nERROR OPENING FILES");
@@ -205,7 +214,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             off_t offset = 0;
             ssize_t bytes_copied = sendfile(dest_fd, source_fd, &offset, source_entry->size);
 
-            if (bytes_copied == -1) {
+            if (bytes_copied == -1) {   
                 printf("\nERROR WHEN WRITTING IN THE DESTINATION FILE!");
                 close(source_fd);
                 close(dest_fd);
@@ -255,7 +264,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param target is the target dir whose content must be listed
  */
 //have to take care when initialising the tial of the list!!!
-void make_list(files_list_t *list, char *target) {                             //should use add entry! 
+void make_list(files_list_t *list, char *target) {                            
      // Verification de la liste afin de voir si elle est vide
     if (!list) {
         perror("\nNULL LIST WAS PROVIDED!");
