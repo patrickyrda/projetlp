@@ -10,7 +10,7 @@ typedef struct _files_list_entry {
   char path_and_name[4096];
   struct timespec mtime;
   uint64_t size;
-  uint8_t md5sum[17];   //increased to 17 in order to be able to add the null terminator in the array representing the md5 hash in 16 bytes
+  uint8_t md5sum[17];   //increased to 17 in order to be able to add the null terminator in the array representing the md5 hash in 16 bytes, although function not tested and ready yet
   file_type_t entry_type;
   mode_t mode;
   struct _files_list_entry *next;

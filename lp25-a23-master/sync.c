@@ -135,8 +135,8 @@ void make_files_list(files_list_t *list, char *target_path) {
         perror("\nNULL LIST WAS PROVIDED!");
         return;
     }
-    
-    files_list_t *path_list = (files_list_t*)sizeof(files_list_t);
+
+    files_list_t *path_list = (files_list_t*)malloc(sizeof(files_list_t));
     if (!path_list){
         perror("\nERROR OPPENING path_list!!");
         return;
@@ -154,6 +154,7 @@ void make_files_list(files_list_t *list, char *target_path) {
         }
         temp = temp->next;
     }
+    clear_files_list(path_list);
 }
 
 /*!
@@ -280,16 +281,17 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
  * @param target is the target dir whose content must be listed
  */
 //have to take care when initialising the tial of the list!!!
-void make_list(files_list_t *list, char *target) {                            
-     // Verification de la liste afin de voir si elle est vide
+void make_list(files_list_t *list, char *target) {
+    // Verification de la liste afin de voir si elle est vide
     if (!list) {
         perror("\nNULL LIST WAS PROVIDED!");
         return;
     }
 
     DIR *dir = open_dir(target);
+    //not usefull since open_dir already control it but ill leave it
     if (dir == NULL) {
-        perror("Erreur ouverture repertoire");
+        perror("ERROR WHEN OPENING DIRECTORY");
         return;
     }
 
@@ -298,49 +300,39 @@ void make_list(files_list_t *list, char *target) {
 
     struct dirent *entry;
     while ((entry = get_next_entry(dir)) != NULL) {
-       
+
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
-        
-        char file_path[PATH_SIZE];
-        snprintf(file_path, PATH_SIZE, "%s/%s", target, entry->d_name);
+
+        char *file_path = concat_path(file_path, target, entry->d_name);
 
         files_list_entry_t *new_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
-        
+
         if (!new_entry) {
             perror("Error allocating memory for new_entry");
             closedir(dir);
             return;
         }
-        //could use concat path here as well
 
-        strncpy(new_entry->path_and_name, file_path, PATH_SIZE - 1);
-        new_entry->path_and_name[PATH_SIZE - 1] = '\0';
+        strcpy(new_entry->path_and_name, file_path);
+
 
         if (add_entry_to_tail(list, new_entry) == -1) {
             perror("\nERROR IN FUCNTION add_entry_to_tail!");
         }
-
-        /*new_entry->next = NULL;
-        new_entry->prev = list->tail;
-
-        if (list->head == NULL) {
-            list->head = new_entry;
-        }
-
-        if (list->tail != NULL) {
-            list->tail->next = new_entry;
-        }
-
-        list->tail = new_entry;*/
-
         if (entry->d_type == DT_DIR) {
             make_list(list, file_path);
         }
+        /*if (is_directory(new_entry->path_and_name)) {
+            make_list(list, file_path);                            THIS IMPLEMENTATION WORKED WHEN USING WINDOWS, in case not working in linux add is_directory and use this
+        }*/
     }
     closedir(dir);
 }
+/*if (entry->d_type == DT_DIR) {
+            make_list(list, file_path);
+        }*/
 
 /*!
  * @brief open_dir opens a dir

@@ -29,23 +29,24 @@ void clear_files_list(files_list_t *list) {
  *  @param file_path the full path (from the root of the considered tree) of the file
  *  @return 0 if success, -1 else (out of memory)
  */
-int add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton 
+int add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton
+
     files_list_entry_t *exist_check = find_entry_by_name(list, file_path);
 
     if (exist_check) {
-        return 0;    
+        return 0;
     }
 
     files_list_entry_t *new_entry = (files_list_entry_t*)malloc(sizeof(files_list_entry_t));
 
     if (!new_entry) {
         perror("\nFAILED TO ALLOCATE MEMORY FOR NEW_ENTRY");
-        return 1;
+        return -1;
     }
 
-    strncpy(new_entry->path_and_name, file_path, PATH_SIZE);
-    new_entry->path_and_name[PATH_SIZE - 1] = '\0';
-    
+    strncpy(new_entry->path_and_name, file_path, strlen(file_path) + 1);
+    new_entry->path_and_name[strlen(file_path)] = '\0';
+
     if (get_file_stats(new_entry) == -1) {
         perror("\nFAILED TO ASSIGN VALUES TO new_entry!");
         return -1;
@@ -54,12 +55,15 @@ int add_file_entry(files_list_t *list, char *file_path) {     //ask about the ty
     new_entry->next = NULL;
     new_entry->prev = NULL;
 
+    if (!list->head && !list->tail) {
+        list->head = new_entry;
+        list->tail = new_entry;
+        return 0;
+    }
     files_list_entry_t *current = list->head;
 
     //the tail will be implemented if it does not exist by make_list
-    if (!current) {
-        list->head = new_entry;
-    } else if (strcmp(new_entry->path_and_name, current->path_and_name) < 0) {
+    if (strcmp(new_entry->path_and_name, current->path_and_name) < 0) {
         new_entry->next = list->head;
         list->head->prev = new_entry;
         list->head = new_entry;
@@ -69,17 +73,17 @@ int add_file_entry(files_list_t *list, char *file_path) {     //ask about the ty
         }
         if (!current->next) {
             current->next = new_entry;
+            new_entry->prev = list->tail;
+            list->tail = new_entry;
+        } else {
+            new_entry->next = current->next;
             new_entry->prev = current;
-            list->tail = new_entry; 
+            current->next = new_entry;
+            current->next->prev = new_entry;
         }
-        new_entry->next = current->next;
-        new_entry->prev = current;
-        current->next = new_entry;
-        current->next->prev = new_entry;  
     }
     //succes
     return 0;
-
 }
 
 
@@ -117,8 +121,9 @@ int add_entry_to_tail(files_list_t *list, files_list_entry_t *entry) {
         list->tail = new_entry;
     } else { 
         new_entry->prev = list->tail;
-        list->tail->next = entry;
-        list->tail = entry;
+        list->tail->next = new_entry;
+        list->tail = new_entry;
+        new_entry->next = NULL;
     }
     return 0 ;
 
