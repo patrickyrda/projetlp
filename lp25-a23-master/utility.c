@@ -42,5 +42,5 @@ char *concat_path(char *result, char *prefix, char *suffix) {
 
     strcat(result, suffix);
 
-    return result;
+    return result;                                        //return pour sassurer si il y a pas eu de return null
 }
