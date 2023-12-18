@@ -49,7 +49,17 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     while (source_element) {
         checkelem = find_entry_by_name(destination, source_element->path_and_name); 
         if (!checkelem) {
-            add_entry_to_tail(differences,source_element);
+            if (add_file_entry(differences,source_element->path_and_name) == -1 ){  
+            perror("add file entry did not work");
+            return;
+            }
+        } else {
+            if (mismatch(source_element, checkelem, the_config)) {
+                if (add_file_entry(differences,source_element->path_and_name) == -1 ){  
+                perror("add file entry did not work");
+                return;
+            }
+        }
         }
         source_element = source_element->next;
     }
@@ -69,7 +79,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         printf("\nDifferences list was empty!");
     }
 
-    clear_files_list(differences);
+    //clear_files_list(differences); this one makes error
     clear_files_list(destination);
     clear_files_list(source);
    
