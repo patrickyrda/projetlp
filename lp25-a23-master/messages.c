@@ -14,6 +14,15 @@
  * Used by the specialized functions send_analyze*
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
+    file_message_t message;
+    message.mtype = (long)recipient;
+    message.cmd_code = cmd_code;
+    memcpy(&(message.file_entry), file_entry, sizeof(files_list_entry_t));
+    int result = msgsnd(msg_queue, &message, sizeof(file_message_t) - sizeof(long), 0);
+    if (result == -1) {
+        perror("msgsnd");
+    }
+    return result;
 }
 
 /*!
@@ -24,6 +33,10 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
  * @return the result of msgsnd
  */
 int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
+    files_list_entry_t dir_entry;
+    memset(&dir_entry, 0, sizeof(files_list_entry_t));
+    strncpy(dir_entry.path, target_dir, sizeof(dir_entry.path) - 1);
+    return send_file_entry(msg_queue, recipient, &dir_entry, ANALYZE_DIR_COMMAND_CODE);
 }
 
 // The 3 following functions are one-liners
