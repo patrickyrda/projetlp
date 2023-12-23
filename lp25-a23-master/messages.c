@@ -110,6 +110,20 @@ int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *fi
  * @return the result of msgsnd
  */
 int send_list_end(int msg_queue, int recipient) {
+    any_message_t message;
+
+    // Configurer le type de message et le code de commande
+    message.simple_command.mtype = (long)recipient;
+    message.simple_command.message = COMMAND_CODE_LIST_COMPLETE;
+
+    // Envoyer le message
+    int result = msgsnd(msg_queue, &message, sizeof(simple_command_t) - sizeof(long), 0);
+
+    if (result == -1) {
+        perror("Erreur lors de l'envoi du message avec msgsnd dans send_list_end");
+    }
+
+    return result;
 }
 
 /*!
