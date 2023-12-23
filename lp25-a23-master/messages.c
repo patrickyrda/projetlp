@@ -75,6 +75,10 @@ int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t 
  * Calls send_file_entry function
  */
 int send_files_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
+    // le code COMMAND_CODE_FILE_ENTRY est défini dans message.h
+    int cmd_code = COMMAND_CODE_FILE_ENTRY;
+    // Appelle send_file_entry avec le code de commande approprié
+    return send_file_entry(msg_queue, recipient, file_entry, cmd_code);
 }
 
 /*!
