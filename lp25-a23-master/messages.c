@@ -64,8 +64,11 @@ int send_analyze_file_command(int msg_queue, int recipient, files_list_entry_t *
  * Calls send_file_entry function
  */
 int send_analyze_file_response(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-}
+    int cmd_code = COMMAND_CODE_FILE_ANALYZED;
 
+    // Appelle la fonction send_file_entry avec le code de commande approprié
+    return send_file_entry(msg_queue, recipient, file_entry, cmd_code);
+}
 /*!
  * @brief send_files_list_element sends a files list entry from a complete files list
  * @param msg_queue the MQ identifier through which to send the entry
