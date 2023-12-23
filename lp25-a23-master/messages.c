@@ -37,6 +37,25 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
  * @return the result of msgsnd
  */
 int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
+    //création d'une variable de type any_message_t
+    any_message_t message;
+    
+    // Définir le type de message et le code de commande
+    message.analyze_dir_command.mtype = (long)recipient;
+    message.analyze_dir_command.op_code = COMMAND_CODE_ANALYZE_DIR;
+
+    // Copier le chemin du répertoire dans la structure du message
+    strncpy(message.analyze_dir_command.target, target_dir, PATH_SIZE);
+    message.analyze_dir_command.target[PATH_SIZE - 1] = '\0';  // Assurer la terminaison par '\0'
+
+    // Envoyer le message
+    int result = msgsnd(msg_queue, &message, sizeof(analyze_dir_command_t) - sizeof(long), 0);
+
+    if (result == -1) {
+        perror("Erreur lors de l'envoi du message avec msgsnd dans send_analyze_dir_command");
+    }
+
+    return result;
 }
 
 // The 3 following functions are one-liners
