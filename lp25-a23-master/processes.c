@@ -49,8 +49,33 @@ void analyzer_process_loop(void *parameters) {
  */
 void clean_processes(configuration_t *the_config, process_context_t *p_context) {
     // Do nothing if not parallel
+    if (!the_config->is_parallel) {
+        return;
+    }
     // Send terminate
+    if (p_context->main_process_pid == getpid()) {
+        // Send terminate signal to listers and analyzers
+        for (int i = 0; i < p_context->processes_count; ++i) {
+            kill(p_context->source_lister_pid, SIGINT);
+            kill(p_context->destination_lister_pid, SIGINT);
+            kill(p_context->source_analyzers_pids[i], SIGINT);
+            kill(p_context->destination_analyzers_pids[i], SIGINT);
+        }
+    }
+
     // Wait for responses
+    waitpid(p_context->source_lister_pid, NULL, 0);
+    waitpid(p_context->destination_lister_pid, NULL, 0);
+    for (int i = 0; i < p_context->processes_count; ++i) {
+        waitpid(p_context->source_analyzers_pids[i], NULL, 0);
+        waitpid(p_context->destination_analyzers_pids[i], NULL, 0);
+    }
+    
     // Free allocated memory
+     free(p_context->source_analyzers_pids);
+     free(p_context->destination_analyzers_pids);
+
     // Free the MQ
+    msgctl(p_context->message_queue_id, IPC_RMID, NULL);
 }
+
