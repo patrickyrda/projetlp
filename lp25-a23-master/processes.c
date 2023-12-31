@@ -16,6 +16,11 @@
  * @return 0 if all went good, -1 else
  */
 int prepare(configuration_t *the_config, process_context_t *p_context) {
+    if (the_config->is_parallel == 0){
+        return -1;
+    }
+    p_context->processes_count = 2;
+    return 0;
 }
 
 /*!
@@ -26,6 +31,14 @@ int prepare(configuration_t *the_config, process_context_t *p_context) {
  * @return the PID of the child process (it never returns in the child process)
  */
 int make_process(process_context_t *p_context, process_loop_t func, void *parameters) {
+    pid_t pid;
+    pid = fork();
+    if (pid == 0) {
+        func(parameters);
+    } else {
+        p_context->main_process_pid = pid;
+        return pid;
+    }
 }
 
 /*!
