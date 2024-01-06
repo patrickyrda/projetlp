@@ -35,9 +35,11 @@ int make_process(process_context_t *p_context, process_loop_t func, void *parame
     pid = fork();
     if (pid == 0) {
         func(parameters);
-    } else {
+    } else if(pid >0) {
         p_context->main_process_pid = pid;
         return pid;
+    } else {
+        return -1 ;
     }
 }
 
