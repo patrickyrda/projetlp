@@ -73,6 +73,30 @@ void lister_process_loop(void *parameters) {
  * @param parameters is a pointer to its parameters, to be cast to an analyzer_configuration_t
  */
 void analyzer_process_loop(void *parameters) {
+    analyzer_configuration_t *config = (analyzer_configuration_t *)parameters;
+    bool running = true;
+    any_message_t message;
+
+    while (running) {
+        // Attendre un message de demande d'analyse
+        if (msgrcv(config->message_queue_id, &message, sizeof(analyze_file_command_t) - sizeof(long), config->my_receiver_id, 0) == -1) {
+            perror("Erreur lors de la réception du message d'analyse");
+            continue;
+        }
+
+        if (message.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_FILE) {
+            // Traitement de l'analyse de fichier
+            files_list_entry_t *entry = &message.analyze_file_command.payload;
+
+            // Effectuer l'analyse ici (taille, date de modification, éventuellement MD5)
+            get_file_stats(entry, config->use_md5); // Cette fonction doit être implémentée pour effectuer l'analyse
+
+            // Préparer et envoyer la réponse
+            send_analyze_file_response(config->message_queue_id, config->my_recipient_id, entry);
+        } else if (message.analyze_file_command.op_code == COMMAND_CODE_TERMINATE) {
+            running = false;
+        }
+    }
 }
 
 /*!
