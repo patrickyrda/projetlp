@@ -46,6 +46,26 @@ int make_process(process_context_t *p_context, process_loop_t func, void *parame
  * @param parameters is a pointer to its parameters, to be cast to a lister_configuration_t
  */
 void lister_process_loop(void *parameters) {
+    lister_configuration_t *config = (lister_configuration_t *)parameters;
+
+    // Initialisation de la liste des fichiers
+    files_list_t files_list;
+    init_files_list(&files_list);
+
+    // Parcourir le répertoire et construire la liste des fichiers
+    make_list(&files_list, config->directory_to_list);  // Remplacer par le chemin approprié
+
+    // Envoi des demandes d'analyse
+    int current_analyzers = 0;
+    files_list_entry_t *current_entry = files_list.head;
+    while (current_entry != NULL && current_analyzers < config->analyzers_count) {
+        // Envoi de la demande d'analyse du fichier courant
+        request_element_details(config->message_queue_id, current_entry, config, &current_analyzers);
+
+        // Passage au fichier suivant
+        current_entry = current_entry->next;
+    }
+ clear_files_list(&files_list);
 }
 
 /*!
