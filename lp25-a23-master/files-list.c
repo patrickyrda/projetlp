@@ -22,12 +22,12 @@ void clear_files_list(files_list_t *list) {
 
 /*!
  *  @brief add_file_entry adds a new file to the files list.
- *  It adds the file in an ordered manner (strcmp) and fills its properties
+ *  It adds the file in an ordered manner (strcmp) and fills its properties ERROR!
  *  by calling stat on the file.
  *  Il the file already exists, it does nothing and returns 0
  *  @param list the list to add the file entry into
  *  @param file_path the full path (from the root of the considered tree) of the file
- *  @return 0 if success, -1 else (out of memory)  //reutiliser avec files_list_entry_t
+ *  @return 0 if success, -1 else (out of memory)
  */
 int add_file_entry(files_list_t *list, char *file_path) {     //ask about the type of return of the funciton
 
@@ -48,10 +48,10 @@ int add_file_entry(files_list_t *list, char *file_path) {     //ask about the ty
     strncpy(new_entry->path_and_name, file_path, strlen(file_path) + 1);
     new_entry->path_and_name[strlen(file_path)] = '\0';
 
-    if (get_file_stats(new_entry) == -1) {
+    /*if (get_file_stats(new_entry) == -1) {
         perror("\nFAILED TO ASSIGN VALUES TO new_entry!");
         return -1;
-    }
+    }*/
 
     new_entry->next = NULL;
     new_entry->prev = NULL;
@@ -157,13 +157,16 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path) {   
     }
     strncpy(file_path_name, get_file_name_from_path(file_path), PATH_SIZE);
     file_path_name[PATH_SIZE - 1] = '\0';
-
+   
     while (current) {
         strncpy(current_name, get_file_name_from_path(current->path_and_name), PATH_SIZE);
         current_name[PATH_SIZE - 1] = '\0';
-        
+         //printf("\n\nINSIDE OF FIND ENTRY BN , OF LOOP, current_name : %s", current_name);
         if (strcmp(current_name, file_path_name) == 0) {
+             //printf("\nFOUND %s INSIDE!", current_name);
             return current;
+        } else {
+        //printf("\n\nDID Not find %s INSIDE!", current_name);
         }
 
         current = current->next;
@@ -203,3 +206,4 @@ void display_files_list_reversed(files_list_t *list) {
         printf("%s\n", cursor->path_and_name);
     }
 }
+

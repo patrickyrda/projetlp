@@ -9,3 +9,5 @@ int compute_file_md5(files_list_entry_t *entry);
 bool directory_exists(char *path_to_dir);
 bool is_directory_writable(char *path_to_dir);
 char *get_file_name_from_path(char *path);
+char *get_path_from_full_path(char *path, char *destination_path); //have to fix here but lowkey working
+

@@ -21,41 +21,63 @@
  * @param p_context is a pointer to the processes context
  */
 void synchronize(configuration_t *the_config, process_context_t *p_context) {
-    //implementation not considering multiprocess!!!!!!!
+    
     files_list_t *destination = (files_list_t *)malloc(sizeof(files_list_t));
-    if (!destination) {
+    destination->head = NULL;
+    destination->tail = NULL;
+    /*if (!destination) {
         perror("\nFailed allocating memory to destination list");
         return;
-    }
+    }*/
     files_list_t *source = (files_list_t *)malloc(sizeof(files_list_t));
-    if (!source) {
+    source->head = NULL;
+    source->tail = NULL;
+    /*if (!source) {
         perror("\nFailed allocating memory to source list");
         return;
-    }
+    }*/
     files_list_t *differences = (files_list_t *)malloc(sizeof(files_list_t));
-    if (!differences) {
-        perror("\nFailed allocating memory to differences list");
-        return;
-    }
-    make_files_list(destination, the_config->destination);
-    make_files_list(source, the_config->source);
-    
     differences->head = NULL;
     differences->tail = NULL;
+    /*if (!differences) {
+        perror("\nFailed allocating memory to differences list");
+        return;
+    }*/
     
     files_list_entry_t *source_element = source->head;
+    
     files_list_entry_t *checkelem;
 
     while (source_element) {
+
         checkelem = find_entry_by_name(destination, source_element->path_and_name); 
         if (!checkelem) {
-            if (add_file_entry(differences,source_element->path_and_name) == -1 ){  
+            printf("\nAdded something!");
+            files_list_entry_t *temp = (files_list_entry_t*)malloc(sizeof(files_list_entry_t));
+            if (!temp) {
+                perror("\nFailed allocating memory to temp");
+                clear_files_list(destination);
+                clear_files_list(source);
+                free(temp);
+                return;
+            }
+            *temp = *source_element;
+            if (add_entry_to_tail(differences,temp) == -1 ){  //complement this                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             perror("add file entry did not work");
             return;
             }
-        } else {
-            if (mismatch(source_element, checkelem, the_config)) {
-                if (add_file_entry(differences,source_element->path_and_name) == -1 ){  
+        } else { 
+        if (mismatch(source_element, checkelem, the_config)) {
+            files_list_entry_t *temp = (files_list_entry_t*)malloc(sizeof(files_list_entry_t));
+            if (!temp) {
+                perror("\nFailed allocating memory to temp");
+                clear_files_list(destination);
+                clear_files_list(source);
+                free(temp);
+                return;
+            }
+            *temp = *source_element;
+            if (add_entry_to_tail(differences,temp) == -1 ){  //complement this                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 perror("add file entry did not work");
                 return;
             }
@@ -63,14 +85,13 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         }
         source_element = source_element->next;
     }
-    
-
-    
+   
     if (differences->head) {
         
         files_list_entry_t *diftemp = differences->head;
 
         while (diftemp) {
+            printf("\nTime for %s\n", diftemp->path_and_name);
             copy_entry_to_destination(diftemp, the_config);
             diftemp = diftemp->next;
         } 
@@ -79,7 +100,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         printf("\nDifferences list was empty!");
     }
 
-    //clear_files_list(differences); this one makes error
+    clear_files_list(differences);
     clear_files_list(destination);
     clear_files_list(source);
    
@@ -146,25 +167,19 @@ void make_files_list(files_list_t *list, char *target_path) {
         return;
     }
 
-    files_list_t *path_list = (files_list_t*)malloc(sizeof(files_list_t));
-    if (!path_list){
-        perror("\nERROR OPPENING path_list!!");
-        return;
-    }
-    make_list(path_list, target_path);
+    make_list(list, target_path);
 
-    files_list_entry_t *temp = path_list->head;
+    files_list_entry_t *temp = list->head;
 
     while (temp) {
-        if (add_file_entry(list, temp->path_and_name) == -1) {
-            perror("\nERROR WITH add_file_entry");
-            clear_files_list(list);
-            clear_files_list(path_list);
-            return;
-        }
+        if (get_file_stats(temp) == -1) {
+        perror("\nFAILED TO ASSIGN VALUES TO new_entry!");
+        clear_files_list(list);
+        return -1;
+    	}
+        if (temp->entry_type == DOSSIER) printf("\nDOSSIER!");
         temp = temp->next;
     }
-    clear_files_list(path_list);
 }
 
 /*!
@@ -188,52 +203,33 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
         printf("\nInvalid Input");
     }
     
-
-    //need to use the concat_path function here !!!!!!!
-    /*char destination[PATH_SIZE], filename[PATH_SIZE];
-    strncpy(destination, the_config->destination, PATH_SIZE - 1);
-    destination[PATH_SIZE - 1] = '\0';
-    strncpy(filename, get_file_name_from_path(source_entry->path_and_name), PATH_SIZE - 1);
-    filename[PATH_SIZE - 1] = '\0';*/
     char destination_path[PATH_SIZE];
     char filename[PATH_SIZE];
     strncpy(destination_path, the_config->destination, PATH_SIZE - 1);
-    strncpy(filename, get_file_name_from_path(source_entry->path_and_name), PATH_SIZE - 1);
+    strncpy(filename, get_path_from_full_path(source_entry->path_and_name, the_config->source), PATH_SIZE - 1);                      //have to fix this but lowkey working 
     char *destination = NULL;
     destination = concat_path(destination, destination_path, filename);
-    destination[sizeof(destination) - 1] = '\0'; //not sure if needed
-
-    //could use snprintf here 
-    /*if (destination[strlen(destination) - 1] != '/') {
-        strncat(destination, "/", PATH_SIZE - strlen(destination) - 1);
-        destination[PATH_SIZE - 1] = '\0';  // Ensure null-termination
-    }
-    // Concatenate the filename to the destination path
-    strncat(destination, filename, PATH_SIZE - strlen(destination) - 1);
-    destination[PATH_SIZE - 1] = '\0'; */
-
-    //destination file initialization
+    destination[PATH_SIZE - 1] = '\0'; //not sure if neede  d
+    
 
     files_list_entry_t *destination_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
     
-    strncpy(destination_entry->path_and_name, destination,sizeof(destination) - 1) ;
+    strncpy(destination_entry->path_and_name, destination, PATH_SIZE - 1) ;
     
     
-    if (get_file_stats(destination_entry) == -1) {
-        printf("\nERROR GETTING FILE STATS");
-        free(destination_entry);
-        return;
-    }
-
     destination_entry->mode = source_entry->mode;
 
     if (source_entry->entry_type == FICHIER) {
-        if (access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry,destination_entry, the_config)) {
-            int source_fd = open(source_entry->path_and_name, O_RDONLY);
+        
+            int source_fd = open(source_entry->path_and_name, O_RDONLY); 
             int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, destination_entry->mode);
-
+            //int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+		printf("\n\nsource_fd path : %s", source_entry->path_and_name);
+    		printf("\ndest_fd : %s\n\n", destination_entry->path_and_name);
             if (source_fd == -1 || dest_fd == -1) {
-                printf("\nERROR OPENING FILES");
+                if (source_fd == -1) printf("\nSOURCE FIND == -1");
+                if (dest_fd == -1) printf("\nDEST FIND == -1");
+                printf("\nERROR OPENING FILES!!!!");
                 free(destination_entry);
                 return;
             }
@@ -258,11 +254,11 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
                 free(destination_entry);
                 return;
             }
-        }
+        
     } else if (source_entry->entry_type == DOSSIER) {
 
-        if(access(destination_entry->path_and_name, F_OK) == -1 || mismatch(source_entry, destination_entry, the_config)) {
-            if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {
+       printf("\n\nINSIDE OF COPY ENTRY DO DESTINATION DIRECTORY!!!");
+            if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {  //here have to open with same writes
                 perror("Error creating directory");
                 return;
             }
@@ -277,10 +273,8 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
                 return;
             }
 
-        }
+        
     }
-    //free(destination_entry);
-
 }
 
 /*!
@@ -305,9 +299,6 @@ void make_list(files_list_t *list, char *target) {
         return;
     }
 
-    list->head = NULL;
-    list->tail = NULL;
-
     struct dirent *entry;
     while ((entry = get_next_entry(dir)) != NULL) {
 
@@ -328,15 +319,15 @@ void make_list(files_list_t *list, char *target) {
         strcpy(new_entry->path_and_name, file_path);
 
 
-        if (add_entry_to_tail(list, new_entry) == -1) {
-            perror("\nERROR IN FUCNTION add_entry_to_tail!");
+        if (add_file_entry(list, new_entry->path_and_name) == -1) {
+            perror("\nERROR IN FUCNTION add_file_entry!");
         }
+        
         if (entry->d_type == DT_DIR) {
+            printf("\nFound a directory! And file_path is %s and new_entry->name_a_p : %s", file_path, new_entry->path_and_name);
             make_list(list, file_path);
         }
-        /*if (is_directory(new_entry->path_and_name)) {
-            make_list(list, file_path);                            THIS IMPLEMENTATION WORKED WHEN USING WINDOWS, in case not working in linux add is_directory and use this
-        }*/
+        
     }
     closedir(dir);
 }
@@ -375,3 +366,4 @@ struct dirent *get_next_entry(DIR *dir) {
 
     return NULL; // Fin du répertoire ou erreur
 }
+

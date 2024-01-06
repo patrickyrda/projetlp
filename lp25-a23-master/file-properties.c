@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <utility.h>
+#include <ctype.h>
+
 
 /*!
  * @brief get_file_stats gets all of the required information for a file (inc. directories)
@@ -58,30 +60,6 @@ int get_file_stats(files_list_entry_t *entry) {
  * @return -1 in case of error, 0 else
  * Use libcrypto functions from openssl/evp.h
  */
-/*int compute_file_md5(files_list_entry_t *entry) {
-    FILE *file = fopen(entry->path_and_name, "rb");
-    if (!file) {
-        return -1;
-    }
-
-    unsigned char c[MD5_DIGEST_LENGTH];
-    MD5_CTX mdContext;
-    int bytes;
-    unsigned char data[1024];
-
-    MD5_Init(&mdContext);
-    while ((bytes = fread(data, 1, 1024, file)) != 0) {
-        MD5_Update(&mdContext, data, bytes);
-    }
-    MD5_Final(c, &mdContext);
-
-    for(int i = 0; i < MD5_DIGEST_LENGTH; i++) {
-        sprintf(&entry->md5sum[i*2], "%02x", (unsigned int)c[i]);
-    }
-
-    fclose(file);
-    return 0;
-}*/
 int compute_file_md5(files_list_entry_t *entry) {
     FILE *file = fopen(entry->path_and_name, "rb");
     if (!file) {
@@ -147,3 +125,36 @@ char *get_file_name_from_path(char *path) {
     char *last_separator = strrchr(path, '/');
     return (last_separator != NULL) ? (last_separator + 1) : path;
 }
+
+char *get_path_from_full_path(char *path, char *source_path) {               //have to handle the case when is an absolute path
+    
+    if (!path || !source_path) {
+        return NULL;
+    }
+
+    
+    if (!path || !source_path) {
+        return NULL;
+    }
+
+    int count = 0;
+
+    while (path[count] != '\0' && source_path[count] != '\0' && path[count] == source_path[count]) {
+        count++;
+    }
+
+    char *result = (char *)malloc(PATH_SIZE * sizeof(char));
+
+    if (!result) {
+        return NULL;
+    }
+
+    strncpy(result, path + count, PATH_SIZE);
+
+    return result;
+}
+
+
+
+
+

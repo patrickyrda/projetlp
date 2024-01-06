@@ -37,10 +37,21 @@ char *concat_path(char *result, char *prefix, char *suffix) {
     result[strlen(result)] = '\0';
 
     if (result[strlen(result) - 1] != '/') {
+        
         strcat(result, "/");
     }
 
-    strcat(result, suffix);
+    if (suffix[0] == '/') {
+        
+        suffix += 1;
+    }
 
-    return result;                                        //return pour sassurer si il y a pas eu de return null
+    strcat(result, suffix);
+    
+    if (result[strlen(result) - 1] == '/') {
+        result[strlen(result) - 1] == '\0';
+    }
+	
+    return result;
 }
+
