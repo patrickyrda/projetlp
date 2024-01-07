@@ -142,8 +142,8 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path) {   
     }
     
     files_list_entry_t *current = list->head;
-    char *current_name = (char*)malloc(PATH_SIZE);
-    char *file_path_name = (char*)malloc(PATH_SIZE);
+    char current_name[PATH_SIZE];
+    char file_path_name[PATH_SIZE];
     if (!current_name || !file_path_name) {
         perror("\nFAILED ALLOCATING MEMORY TO FILE NAME VARIABLES");
         free(current_name);
@@ -164,8 +164,6 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path) {   
         current = current->next;
     }
      
-    free(current_name);
-    free(file_path_name);
     return NULL;   //the file was not found 
 }
 

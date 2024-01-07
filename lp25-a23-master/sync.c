@@ -273,8 +273,6 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             close(dest_fd);
         
     } else if (source_entry->entry_type == DOSSIER) {
-
-       printf("\n\nINSIDE OF COPY ENTRY DO DESTINATION DIRECTORY!!!");
             if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {  
                 perror("Error creating directory");
                 return;
