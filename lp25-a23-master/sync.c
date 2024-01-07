@@ -46,10 +46,12 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
 
     make_files_list(source, the_config->source);
     if (the_config->is_verbose || the_config->is_dry_run) {
+        printf("\nSOURCE LIST:\n");
         display_files_list(source);
     }
     make_files_list(destination, the_config->destination);
     if (the_config->is_verbose || the_config->is_dry_run) {
+        printf("\nDESTINATION LIST:\n");
         display_files_list(destination);
     }
     
@@ -98,6 +100,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     if (differences->head) {
 
         if (the_config->is_verbose || the_config->is_dry_run) {
+        printf("\nDIFFERENCES LIST:\n");
         display_files_list(differences);
         }
 
@@ -118,6 +121,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     clear_files_list(differences);
     clear_files_list(destination);
     clear_files_list(source);
+
    
     
 }
