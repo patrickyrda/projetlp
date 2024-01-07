@@ -155,15 +155,15 @@ int send_terminate_confirm(int msg_queue, int recipient) {
         return -1;
     }
 
-    // Vérification processus appelant = processus fils
-    pid_t calling_process_parent = getppid(); // Identifiant du parent du processus appelant
+
+    pid_t calling_process_parent = getppid(); 
     if (calling_process_parent == recipient) {
         perror("Tentative d'envoi par un processus parent\n");
         return -1;
     }
 
-    // Vérification destinataire = processus parent
-    pid_t parent_pid = getppid(); // Identifiant du parent du processus en cours
+ 
+    pid_t parent_pid = getppid(); 
     if (parent_pid != recipient) {
         perror("Le destinataire n'est pas un processus parent\n");
         return -1;
@@ -171,9 +171,8 @@ int send_terminate_confirm(int msg_queue, int recipient) {
 
     any_message_t message;
 
-    // Configuration type de message + code de commande pour la confirmation de terminaison
-    message.simple_command.mtype = (long)recipient; // Type de message = destinataire (généralement le parent)
-    message.simple_command.message = COMMAND_CODE_TERMINATE_OK; // Code de commande pour la confirmation de terminaison
+    message.simple_command.mtype = (long)recipient; 
+    message.simple_command.message = COMMAND_CODE_TERMINATE_OK; 
 
      int result = msgsnd(msg_queue, &message, sizeof(simple_command_t) - sizeof(long), 0);
 
