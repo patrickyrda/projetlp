@@ -15,18 +15,11 @@
  */
 int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry, int cmd_code) {
     any_message_t message;
-    message.list_entry.mtype = (long)recipient;
-    message.list_entry.op_code = (char)cmd_code;                  // can i use pointer notation here
-
-    memcpy(&(message.list_entry.payload), file_entry, sizeof(files_list_entry_t));
-
-    int result = msgsnd(msg_queue, &message, sizeof(files_list_entry_transmit_t) - sizeof(long), 0);
-
-    if (result == -1) {
-        perror("\nmsgsnd in send_file_entry");
-    }
-
-    return result;
+    message.list_entry.payload = *file_entry;
+    message.list_entry.reply_to = msg_queue;
+    message.list_entry.mtype = recipient;
+    message.list_entry.op_code = cmd_code;
+    return msgsnd(msg_queue, &message, sizeof(files_list_entry_transmit_t) - sizeof(long), 0);
 }
 
 /*!
@@ -36,13 +29,13 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
  * @param target_dir is a string containing the path to the directory to analyze
  * @return the result of msgsnd
  */
-int send_analyze_dir_command(int msg_queue_id, int dest, const char *dir) {
+int send_analyze_dir_command(int msg_queue, int dest, const char *dir) {
     analyze_dir_command_t cmd;
     cmd.mtype = dest;
     strncpy(cmd.target, dir, sizeof(cmd.target) - 1);
     cmd.target[sizeof(cmd.target) - 1] = '\0'; // Assurez-vous que la chaîne est terminée correctement.
     cmd.op_code = COMMAND_CODE_ANALYZE_DIR;
-    return msgsnd(msg_queue_id, &cmd, sizeof(cmd) - sizeof(long), 0);
+    return msgsnd(msg_queue, &cmd, sizeof(cmd) - sizeof(long), 0);
 }
 
 // The 3 following functions are one-liners
