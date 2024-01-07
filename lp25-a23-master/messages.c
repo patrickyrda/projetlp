@@ -189,3 +189,8 @@ int send_terminate_confirm(int msg_queue, int recipient) {
 int send_files_source_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
     return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_SOURCE_FILE_ENTRY);
 }
+
+int send_files_location_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
+    return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_DESTINATION_FILE_ENTRY);
+}
+
