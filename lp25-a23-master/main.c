@@ -38,7 +38,8 @@ int main(int argc, char *argv[]) {
 
     // Prepare (fork, MQ) if parallel
     process_context_t processes_context;
-    prepare(&my_config, &processes_context);
+    //comme on a pas reussi a implementer la version parallele on nutilise pas les fonctions liees aux processus
+    //prepare(&my_config, &processes_context);
 
     // Run synchronize:
     synchronize(&my_config, &processes_context);
