@@ -25,24 +25,24 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     files_list_t *destination = (files_list_t *)malloc(sizeof(files_list_t));
     destination->head = NULL;
     destination->tail = NULL;
-    /*if (!destination) {
+    if (!destination) {
         perror("\nFailed allocating memory to destination list");
         return;
-    }*/
+    }
     files_list_t *source = (files_list_t *)malloc(sizeof(files_list_t));
     source->head = NULL;
     source->tail = NULL;
-    /*if (!source) {
+    if (!source) {
         perror("\nFailed allocating memory to source list");
         return;
-    }*/
+    }
     files_list_t *differences = (files_list_t *)malloc(sizeof(files_list_t));
     differences->head = NULL;
     differences->tail = NULL;
-    /*if (!differences) {
+    if (!differences) {
         perror("\nFailed allocating memory to differences list");
         return;
-    }*/
+    }
 
     make_files_list(source, the_config->source);
     if (the_config->is_verbose || the_config->is_dry_run) {
