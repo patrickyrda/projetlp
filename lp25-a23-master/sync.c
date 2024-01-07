@@ -63,7 +63,6 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
 
         checkelem = find_entry_by_name(destination, source_element->path_and_name); 
         if (!checkelem) {
-            printf("\nAdded something!");
             files_list_entry_t *temp = (files_list_entry_t*)malloc(sizeof(files_list_entry_t));
             if (!temp) {
                 perror("\nFailed allocating memory to temp");
@@ -196,7 +195,6 @@ void make_files_list(files_list_t *list, char *target_path) {
         clear_files_list(list);
         return -1;
     	}
-        if (temp->entry_type == DOSSIER) printf("\nDOSSIER!");
         temp = temp->next;
     }
 }

@@ -16,7 +16,7 @@
  * @return 0 if all went good, -1 else
  */
 int prepare(configuration_t *the_config, process_context_t *p_context) {
-    if (the_config != NULL && the_config->is_parallel == true) {
+    if (the_config != NULL && the_config->is_parallel) {
         
         p_context->shared_key = ftok("lp25_backup", 11);
         
@@ -104,7 +104,17 @@ int make_process(process_context_t *p_context, process_loop_t func, void *parame
  * @param parameters is a pointer to its parameters, to be cast to a lister_configuration_t
  */
 void lister_process_loop(void *parameters) {
-    
+    lister_configuration_t *config = (lister_configuration_t *)parameters;
+    analyze_dir_command_t message; 
+    any_message_t terminate_message;
+
+    int mq_id = msgget(config->mq_key, 0666);
+
+    while (terminate_message.simple_command.message != COMMAND_CODE_TERMINATE) {
+       
+    }
+
+
     return 0; 
     
 }
