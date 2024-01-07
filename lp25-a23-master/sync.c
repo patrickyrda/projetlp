@@ -45,7 +45,13 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
     }*/
 
     make_files_list(source, the_config->source);
+    if (the_config->is_verbose || the_config->is_dry_run) {
+        display_files_list(source);
+    }
     make_files_list(destination, the_config->destination);
+    if (the_config->is_verbose || the_config->is_dry_run) {
+        display_files_list(destination);
+    }
     
     files_list_entry_t *source_element = source->head;
     
@@ -89,7 +95,11 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         source_element = source_element->next;
     }
    
-    if (differences->head) {
+    if (differences->head || !the_config->is_dry_run) {
+
+        if (the_config->is_verbose || the_config->is_dry_run) {
+        display_files_list(differences);
+        }
         
         files_list_entry_t *diftemp = differences->head;
 
@@ -98,7 +108,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
             diftemp = diftemp->next;
         } 
     
-    } else {
+    } else if (the_config->is_verbose) {
         printf("\nDifferences list was empty!");
     }
 
