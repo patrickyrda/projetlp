@@ -43,6 +43,9 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         perror("\nFailed allocating memory to differences list");
         return;
     }*/
+
+    make_files_list(source, the_config->source);
+    make_files_list(destination, the_config->destination);
     
     files_list_entry_t *source_element = source->head;
     
