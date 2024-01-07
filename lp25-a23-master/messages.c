@@ -29,10 +29,10 @@ int send_file_entry(int msg_queue, int recipient, files_list_entry_t *file_entry
  * @param target_dir is a string containing the path to the directory to analyze
  * @return the result of msgsnd
  */
-int send_analyze_dir_command(int msg_queue, int dest, const char *dir) {
+int send_analyze_dir_command(int msg_queue, int recipient, char *target_dir) {
     analyze_dir_command_t cmd;
-    cmd.mtype = dest;
-    strncpy(cmd.target, dir, sizeof(cmd.target) - 1);
+    cmd.mtype = recipient;
+    strncpy(cmd.target, target_dir, sizeof(cmd.target) - 1);
     cmd.target[sizeof(cmd.target) - 1] = '\0'; // Assurez-vous que la chaîne est terminée correctement.
     cmd.op_code = COMMAND_CODE_ANALYZE_DIR;
     return msgsnd(msg_queue, &cmd, sizeof(cmd) - sizeof(long), 0);
@@ -185,12 +185,3 @@ int send_terminate_confirm(int msg_queue, int recipient) {
 
     return result;
 }
-
-int send_files_source_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-    return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_SOURCE_FILE_ENTRY);
-}
-
-int send_files_location_list_element(int msg_queue, int recipient, files_list_entry_t *file_entry) {
-    return send_file_entry(msg_queue, recipient, file_entry, COMMAND_CODE_DESTINATION_FILE_ENTRY);
-}
-

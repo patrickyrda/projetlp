@@ -48,11 +48,6 @@ int add_file_entry(files_list_t *list, char *file_path) {     //ask about the ty
     strncpy(new_entry->path_and_name, file_path, strlen(file_path) + 1);
     new_entry->path_and_name[strlen(file_path)] = '\0';
 
-    /*if (get_file_stats(new_entry) == -1) {
-        perror("\nFAILED TO ASSIGN VALUES TO new_entry!");
-        return -1;
-    }*/
-
     new_entry->next = NULL;
     new_entry->prev = NULL;
 
@@ -161,12 +156,9 @@ files_list_entry_t *find_entry_by_name(files_list_t *list, char *file_path) {   
     while (current) {
         strncpy(current_name, get_file_name_from_path(current->path_and_name), PATH_SIZE);
         current_name[PATH_SIZE - 1] = '\0';
-         //printf("\n\nINSIDE OF FIND ENTRY BN , OF LOOP, current_name : %s", current_name);
+
         if (strcmp(current_name, file_path_name) == 0) {
-             //printf("\nFOUND %s INSIDE!", current_name);
-            return current;
-        } else {
-        //printf("\n\nDID Not find %s INSIDE!", current_name);
+           return current;
         }
 
         current = current->next;

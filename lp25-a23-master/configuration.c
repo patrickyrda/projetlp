@@ -29,7 +29,7 @@ void init_configuration(configuration_t *the_config) {
     the_config->source[sizeof(the_config->source) - 1] = '\0';
     strncpy(the_config->destination, "", sizeof(the_config->destination));
     the_config->destination[sizeof(the_config->destination) - 1] = '\0';
-    the_config->processes_count = 1;        // !! check how many processes
+    the_config->processes_count = 4;        
     the_config->is_parallel = true;
     the_config->uses_md5 = true;
     the_config->is_verbose = false;
@@ -56,14 +56,11 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
         switch (opt) {
             case 'n':
             the_config->processes_count = atoi(optarg);
-            if (the_config->processes_count == 0) {
-                fprintf(stderr, "Option should be a number!.\n");
-                return -1;
-            } else if (optarg == NULL) {
-                fprintf(stderr, "Error: Option -n requires an argument.\n");
-                return -1;
-            } else {
-            the_config->processes_count = atoi(optarg);
+            if (the_config->processes_count < 4) {
+                    the_config->processes_count = 4;
+                }
+            if (the_config->processes_count % 2 == 1) {
+                the_config->processes_count--;
             }
             break;
             case 'v':
@@ -80,15 +77,9 @@ int set_configuration(configuration_t *the_config, int argc, char *argv[]) {
             break;
             case DRY_RUN:
             the_config->is_dry_run = true;
-            //!! do something, do we need to do it later or add a function
-            break;
-            case '?':    
-            if (optopt != 'n') {
-                printf("Unknown option: %c\n", optopt); //should i stop the program when encoutering this or not, if not get rid cuz it takes n as error when it has no args
-            }
             break;
             default: 
-            printf("unexpected case!\n"); //what about this one, it shows 
+            printf("unexpected case!\n"); 
         
         }   
     }

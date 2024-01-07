@@ -104,70 +104,7 @@ int make_process(process_context_t *p_context, process_loop_t func, void *parame
  * @param parameters is a pointer to its parameters, to be cast to a lister_configuration_t
  */
 void lister_process_loop(void *parameters) {
-    lister_configuration_t *config = (lister_configuration_t *)parameters;
-
-    // Initialisation de la liste des fichiers
-    files_list_t files_list;
-    files_list.head = NULL;
-    files_list.tail = NULL;
-
-    any_message_t msg;
-
-    files_list_entry_t *entry, *analyse_entry;
-
-    // Envoi des demandes d'analyse
-    int current_analyzers = 0;
-    int mq_id = msgget(config->mq_key, 0666);
-
-    while (msg.simple_command.message != COMMAND_CODE_TERMINATE) {
-        if (msgrcv(mq_id, &msg, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0) != -1) {
-            
-            if (msg.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_DIR) {
-                //list file of the target directory
-                make_list(&files_list, msg.analyze_dir_command.target);
-
-                // analyse each file
-                entry = files_list.head;
-                analyse_entry = files_list.head;
-                while (entry != NULL) {
-                    
-                    while (entry != NULL && current_analyzers < config->analyzers_count) {
-                        send_analyze_file_command(mq_id, config->my_recipient_id, entry);
-                        entry = entry->next;
-                        current_analyzers++;
-                    }
-                    
-                    while (current_analyzers > 0) {
-                        msgrcv(mq_id, &msg, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0);
-                        memcpy(analyse_entry, &msg.analyze_file_command.payload, sizeof(files_list_entry_t));
-                        analyse_entry = analyse_entry->next;
-                        current_analyzers--;
-                    }
-                }
-
-                // send each entry to main
-                entry = files_list.head;
-                while (entry != NULL) {
-                    if (config->my_receiver_id == MSG_TYPE_TO_SOURCE_LISTER) {
-                        send_files_source_list_element(mq_id, MSG_TYPE_TO_MAIN, entry);
-                    } else {
-                        send_files_destination_list_element(mq_id, MSG_TYPE_TO_MAIN, entry);
-                    }
-
-                    entry = entry->next;
-                }
-                
-                if (config->my_receiver_id == MSG_TYPE_TO_SOURCE_LISTER) {
-                    send_source_list_end(mq_id, MSG_TYPE_TO_MAIN);
-                } else {
-                    send_destination_list_end(mq_id, MSG_TYPE_TO_MAIN);
-                }
-            }
-        }
-    }
-
-    send_terminate_confirm(mq_id, MSG_TYPE_TO_MAIN);
-
+    
     return 0; 
     
 }

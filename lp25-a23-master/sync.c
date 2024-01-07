@@ -62,7 +62,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
                 return;
             }
             *temp = *source_element;
-            if (add_entry_to_tail(differences,temp) == -1 ){  //complement this                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if (add_entry_to_tail(differences,temp) == -1 ){ 
             perror("add file entry did not work");
             return;
             }
@@ -77,7 +77,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
                 return;
             }
             *temp = *source_element;
-            if (add_entry_to_tail(differences,temp) == -1 ){  //complement this                                               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if (add_entry_to_tail(differences,temp) == -1 ){  
                 perror("add file entry did not work");
                 return;
             }
@@ -91,7 +91,6 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         files_list_entry_t *diftemp = differences->head;
 
         while (diftemp) {
-            printf("\nTime for %s\n", diftemp->path_and_name);
             copy_entry_to_destination(diftemp, the_config);
             diftemp = diftemp->next;
         } 
@@ -114,7 +113,7 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
  * @has_md5 a value to enable or disable MD5 sum check
  * @return true if both files are not equal, false else
  */
-bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t *the_config) {             //im moving the bool has md5, might also move the name control!!
+bool mismatch(files_list_entry_t *lhd, files_list_entry_t *rhd, configuration_t *the_config) {            
     //its an invalid input
     if (!lhd || !rhd) {
         return true;
@@ -190,6 +189,7 @@ void make_files_list(files_list_t *list, char *target_path) {
  * @param msg_queue is the id of the MQ used for communication
  */
 void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, configuration_t *the_config, int msg_queue) {
+   
 }
 
 /*!
@@ -198,7 +198,7 @@ void make_files_lists_parallel(files_list_t *src_list, files_list_t *dst_list, c
  * Pay attention to the path so that the prefixes are not repeated from the source to the destination
  * Use sendfile to copy the file, mkdir to create the directory
  */
-void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {          //theres an error here!!! nned to check the logic as well, need corrections for sure!
+void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t *the_config) {         
     if (!source_entry) {
         printf("\nInvalid Input");
     }
@@ -206,10 +206,10 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
     char destination_path[PATH_SIZE];
     char filename[PATH_SIZE];
     strncpy(destination_path, the_config->destination, PATH_SIZE - 1);
-    strncpy(filename, get_path_from_full_path(source_entry->path_and_name, the_config->source), PATH_SIZE - 1);                      //have to fix this but lowkey working 
+    strncpy(filename, get_path_from_full_path(source_entry->path_and_name, the_config->source), PATH_SIZE - 1);                      
     char *destination = NULL;
     destination = concat_path(destination, destination_path, filename);
-    destination[PATH_SIZE - 1] = '\0'; //not sure if neede  d
+    destination[PATH_SIZE - 1] = '\0';
     
 
     files_list_entry_t *destination_entry = (files_list_entry_t *)malloc(sizeof(files_list_entry_t));
@@ -224,8 +224,6 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             int source_fd = open(source_entry->path_and_name, O_RDONLY); 
             int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, destination_entry->mode);
             //int dest_fd = open(destination_entry->path_and_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
-		printf("\n\nsource_fd path : %s", source_entry->path_and_name);
-    		printf("\ndest_fd : %s\n\n", destination_entry->path_and_name);
             if (source_fd == -1 || dest_fd == -1) {
                 if (source_fd == -1) printf("\nSOURCE FIND == -1");
                 if (dest_fd == -1) printf("\nDEST FIND == -1");
@@ -249,16 +247,17 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             times[0] = source_entry->mtime;  // atime
             times[1] = source_entry->mtime;  // mtime
 
-            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, 0) == -1) {    //small problem with the AT_FDCWD!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, 0) == -1) {   
                 perror("Error setting modification time");
-                free(destination_entry);
-                return;
             }
+
+            close(source_fd);
+            close(dest_fd);
         
     } else if (source_entry->entry_type == DOSSIER) {
 
        printf("\n\nINSIDE OF COPY ENTRY DO DESTINATION DIRECTORY!!!");
-            if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {  //here have to open with same writes
+            if (mkdir(destination_entry->path_and_name, S_IRWXU | S_IRWXG | S_IRWXO) == -1) {  
                 perror("Error creating directory");
                 return;
             }
@@ -267,7 +266,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
             times[0] = source_entry->mtime;
             times[1] = source_entry->mtime;
 
-            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, AT_SYMLINK_NOFOLLOW) == -1) {   //normaly the AT_SYMLINK is only to assure ;
+            if (utimensat(AT_FDCWD, destination_entry->path_and_name, times, AT_SYMLINK_NOFOLLOW) == -1) {   
                 perror("Error setting access modes and mtime for directory");
                 free(destination_entry);
                 return;
@@ -275,6 +274,7 @@ void copy_entry_to_destination(files_list_entry_t *source_entry, configuration_t
 
         
     }
+
 }
 
 /*!
@@ -293,7 +293,7 @@ void make_list(files_list_t *list, char *target) {
     }
 
     DIR *dir = open_dir(target);
-    //not usefull since open_dir already control it but ill leave it
+    
     if (dir == NULL) {
         perror("ERROR WHEN OPENING DIRECTORY");
         return;
@@ -324,7 +324,6 @@ void make_list(files_list_t *list, char *target) {
         }
         
         if (entry->d_type == DT_DIR) {
-            printf("\nFound a directory! And file_path is %s and new_entry->name_a_p : %s", file_path, new_entry->path_and_name);
             make_list(list, file_path);
         }
         
