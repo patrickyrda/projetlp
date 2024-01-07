@@ -114,21 +114,6 @@ void lister_process_loop(void *parameters) {
  * @param parameters is a pointer to its parameters, to be cast to an analyzer_configuration_t
  */
 void analyzer_process_loop(void *parameters) {
-    analyzer_configuration_t *config = (analyzer_configuration_t *)parameters;
-    int mq_id = msgget(config->mq_key, 0666);
-    any_message_t message;
-
-    while (message.simple_command.message != COMMAND_CODE_TERMINATE) {
-        if(msgrcv(mq_id, &message, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0) != -1) {
-            if (message.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_FILE) {
-                get_file_stats(&message.analyze_file_command.payload);
-                send_analyze_file_response(mq_id, config->my_recipient_id, &message.analyze_file_command.payload);
-            }
-        }
-    }
-
-    send_terminate_confirm(mq_id, MSG_TYPE_TO_MAIN);
-
     return 0;
 }
 
