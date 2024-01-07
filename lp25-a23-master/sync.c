@@ -95,18 +95,21 @@ void synchronize(configuration_t *the_config, process_context_t *p_context) {
         source_element = source_element->next;
     }
    
-    if (differences->head || !the_config->is_dry_run) {
+    if (differences->head) {
 
         if (the_config->is_verbose || the_config->is_dry_run) {
         display_files_list(differences);
         }
-        
-        files_list_entry_t *diftemp = differences->head;
 
-        while (diftemp) {
-            copy_entry_to_destination(diftemp, the_config);
-            diftemp = diftemp->next;
-        } 
+        if (!the_config->is_dry_run) {
+        
+            files_list_entry_t *diftemp = differences->head;
+
+            while (diftemp) {
+                copy_entry_to_destination(diftemp, the_config);
+                diftemp = diftemp->next;
+            } 
+        }
     
     } else if (the_config->is_verbose) {
         printf("\nDifferences list was empty!");
