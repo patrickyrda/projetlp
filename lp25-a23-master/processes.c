@@ -16,11 +16,65 @@
  * @return 0 if all went good, -1 else
  */
 int prepare(configuration_t *the_config, process_context_t *p_context) {
-    if (the_config->is_parallel == 0){
-        return -1;
+    if (the_config != NULL && the_config->is_parallel == true) {
+        
+        p_context->shared_key = ftok("lp25_backup", 11);
+        
+        if (p_context->shared_key == -1) {
+            perror("ERROR with shared_key\n");
+            return -1;
+        }
+
+    
+
+        p_context->processes_count = 0;
+        p_context->main_process_pid = getpid();
+
+        p_context->message_queue_id = msgget(p_context->shared_key, 0666 | IPC_CREAT);
+        if (p_context->message_queue_id == -1) {
+            perror("ERROR with msgget!\n");
+            return -1;
+        }
+    
+
+        lister_configuration_t cfg_dest_lister;
+        cfg_dest_lister.mq_key = p_context->shared_key;
+        cfg_dest_lister.my_recipient_id = MSG_TYPE_TO_DESTINATION_ANALYZERS;
+        cfg_dest_lister.my_receiver_id = MSG_TYPE_TO_DESTINATION_LISTER;
+        cfg_dest_lister.analyzers_count = (the_config->processes_count-2)/2;
+        p_context->destination_lister_pid = make_process(p_context, lister_process_loop, &cfg_dest_lister);
+
+        lister_configuration_t cfg_src_lister;
+        cfg_src_lister.mq_key = p_context->shared_key;
+        cfg_src_lister.my_recipient_id = MSG_TYPE_TO_SOURCE_ANALYZERS;
+        cfg_src_lister.my_receiver_id = MSG_TYPE_TO_SOURCE_LISTER;
+        cfg_src_lister.analyzers_count = (the_config->processes_count-2)/2;
+        p_context->source_lister_pid = make_process(p_context, lister_process_loop, &cfg_src_lister);
+
+        analyzer_configuration_t cfg_src_analyser;
+        cfg_src_analyser.mq_key = p_context->shared_key;
+        cfg_src_analyser.my_recipient_id = MSG_TYPE_TO_SOURCE_LISTER;
+        cfg_src_analyser.my_receiver_id = MSG_TYPE_TO_SOURCE_ANALYZERS;
+        cfg_src_analyser.use_md5 = the_config->uses_md5;   
+        p_context->source_analyzers_pids = (pid_t*)malloc(sizeof(pid_t) * (the_config->processes_count - 2) / 2);
+        for (int i = 0; i < (the_config->processes_count - 2) / 2; i++) {
+            p_context->source_analyzers_pids[i] = make_process(p_context, analyzer_process_loop, &cfg_src_analyser);
+        }
+
+        analyzer_configuration_t cfg_dest_analyser;
+        cfg_dest_analyser.mq_key = p_context->shared_key;
+        cfg_dest_analyser.my_recipient_id = MSG_TYPE_TO_DESTINATION_LISTER;
+        cfg_dest_analyser.my_receiver_id = MSG_TYPE_TO_DESTINATION_ANALYZERS;
+        cfg_dest_analyser.use_md5 = the_config->uses_md5;   
+        p_context->destination_analyzers_pids = (pid_t*)malloc(sizeof(pid_t) * (the_config->processes_count - 2) / 2);
+        for (int i = 0; i < (the_config->processes_count - 2) / 2; i++) {
+            p_context->destination_analyzers_pids[i] = make_process(p_context, analyzer_process_loop, &cfg_dest_analyser);
+        }
+    
     }
-    p_context->processes_count = 2;
+
     return 0;
+
 }
 
 /*!
@@ -35,8 +89,10 @@ int make_process(process_context_t *p_context, process_loop_t func, void *parame
     pid = fork();
     if (pid == 0) {
         func(parameters);
-    } else if(pid >0) {
-        p_context->main_process_pid = pid;
+        perror("\nERROR with fork!");
+        return -1;
+    } else if(pid > 0) {
+        p_context->processes_count++;
         return pid;
     } else {
         return -1 ;
@@ -52,22 +108,68 @@ void lister_process_loop(void *parameters) {
 
     // Initialisation de la liste des fichiers
     files_list_t files_list;
-    init_files_list(&files_list);
+    files_list.head = NULL;
+    files_list.tail = NULL;
 
-    // Parcourir le répertoire et construire la liste des fichiers
-    make_list(&files_list, config->directory_to_list);  // Remplacer par le chemin approprié
+    any_message_t msg;
+
+    files_list_entry_t *entry, *analyse_entry;
 
     // Envoi des demandes d'analyse
     int current_analyzers = 0;
-    files_list_entry_t *current_entry = files_list.head;
-    while (current_entry != NULL && current_analyzers < config->analyzers_count) {
-        // Envoi de la demande d'analyse du fichier courant
-        request_element_details(config->message_queue_id, current_entry, config, &current_analyzers);
+    int mq_id = msgget(config->mq_key, 0666);
 
-        // Passage au fichier suivant
-        current_entry = current_entry->next;
+    while (msg.simple_command.message != COMMAND_CODE_TERMINATE) {
+        if (msgrcv(mq_id, &msg, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0) != -1) {
+            
+            if (msg.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_DIR) {
+                //list file of the target directory
+                make_list(&files_list, msg.analyze_dir_command.target);
+
+                // analyse each file
+                entry = files_list.head;
+                analyse_entry = files_list.head;
+                while (entry != NULL) {
+                    
+                    while (entry != NULL && current_analyzers < config->analyzers_count) {
+                        send_analyze_file_command(mq_id, config->my_recipient_id, entry);
+                        entry = entry->next;
+                        current_analyzers++;
+                    }
+                    
+                    while (current_analyzers > 0) {
+                        msgrcv(mq_id, &msg, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0);
+                        memcpy(analyse_entry, &msg.analyze_file_command.payload, sizeof(files_list_entry_t));
+                        analyse_entry = analyse_entry->next;
+                        current_analyzers--;
+                    }
+                }
+
+                // send each entry to main
+                entry = files_list.head;
+                while (entry != NULL) {
+                    if (config->my_receiver_id == MSG_TYPE_TO_SOURCE_LISTER) {
+                        send_files_source_list_element(mq_id, MSG_TYPE_TO_MAIN, entry);
+                    } else {
+                        send_files_destination_list_element(mq_id, MSG_TYPE_TO_MAIN, entry);
+                    }
+
+                    entry = entry->next;
+                }
+                
+                if (config->my_receiver_id == MSG_TYPE_TO_SOURCE_LISTER) {
+                    send_source_list_end(mq_id, MSG_TYPE_TO_MAIN);
+                } else {
+                    send_destination_list_end(mq_id, MSG_TYPE_TO_MAIN);
+                }
+            }
+        }
     }
- clear_files_list(&files_list);
+
+    send_terminate_confirm(mq_id, MSG_TYPE_TO_MAIN);
+
+    return 0; 
+    
 }
 
 /*!
@@ -76,29 +178,21 @@ void lister_process_loop(void *parameters) {
  */
 void analyzer_process_loop(void *parameters) {
     analyzer_configuration_t *config = (analyzer_configuration_t *)parameters;
-    bool running = true;
+    int mq_id = msgget(config->mq_key, 0666);
     any_message_t message;
 
-    while (running) {
-        // Attendre un message de demande d'analyse
-        if (msgrcv(config->message_queue_id, &message, sizeof(analyze_file_command_t) - sizeof(long), config->my_receiver_id, 0) == -1) {
-            perror("Erreur lors de la réception du message d'analyse");
-            continue;
-        }
-
-        if (message.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_FILE) {
-            // Traitement de l'analyse de fichier
-            files_list_entry_t *entry = &message.analyze_file_command.payload;
-
-            // Effectuer l'analyse ici (taille, date de modification, éventuellement MD5)
-            get_file_stats(entry, config->use_md5); // Cette fonction doit être implémentée pour effectuer l'analyse
-
-            // Préparer et envoyer la réponse
-            send_analyze_file_response(config->message_queue_id, config->my_recipient_id, entry);
-        } else if (message.analyze_file_command.op_code == COMMAND_CODE_TERMINATE) {
-            running = false;
+    while (message.simple_command.message != COMMAND_CODE_TERMINATE) {
+        if(msgrcv(mq_id, &message, sizeof(any_message_t) - sizeof(long), config->my_receiver_id, 0) != -1) {
+            if (message.analyze_file_command.op_code == COMMAND_CODE_ANALYZE_FILE) {
+                get_file_stats(&message.analyze_file_command.payload);
+                send_analyze_file_response(mq_id, config->my_recipient_id, &message.analyze_file_command.payload);
+            }
         }
     }
+
+    send_terminate_confirm(mq_id, MSG_TYPE_TO_MAIN);
+
+    return 0;
 }
 
 /*!
@@ -108,33 +202,40 @@ void analyzer_process_loop(void *parameters) {
  */
 void clean_processes(configuration_t *the_config, process_context_t *p_context) {
     // Do nothing if not parallel
+
+    if (the_config == NULL || p_context == NULL) {
+        perror("ERROR dans parametres de clean_processes\n");
+        return;
+    }
+
     if (!the_config->is_parallel) {
         return;
     }
+
+    any_message_t msg;
+
     // Send terminate
-    if (p_context->main_process_pid == getpid()) {
-        // Send terminate signal to listers and analyzers
-        for (int i = 0; i < p_context->processes_count; ++i) {
-            kill(p_context->source_lister_pid, SIGINT);
-            kill(p_context->destination_lister_pid, SIGINT);
-            kill(p_context->source_analyzers_pids[i], SIGINT);
-            kill(p_context->destination_analyzers_pids[i], SIGINT);
-        }
+   
+    send_terminate_command(p_context->message_queue_id, MSG_TYPE_TO_SOURCE_LISTER);
+    send_terminate_command(p_context->message_queue_id, MSG_TYPE_TO_DESTINATION_LISTER);
+
+    for (int i = 0; i < (p_context->processes_count - 2) / 2; i++) {
+        send_terminate_command(p_context->message_queue_id, MSG_TYPE_TO_SOURCE_ANALYZERS);
+        send_terminate_command(p_context->message_queue_id, MSG_TYPE_TO_DESTINATION_ANALYZERS);
     }
 
     // Wait for responses
-    waitpid(p_context->source_lister_pid, NULL, 0);
-    waitpid(p_context->destination_lister_pid, NULL, 0);
-    for (int i = 0; i < p_context->processes_count; ++i) {
-        waitpid(p_context->source_analyzers_pids[i], NULL, 0);
-        waitpid(p_context->destination_analyzers_pids[i], NULL, 0);
-    }
     
+    for (int i = 0; i < p_context->processes_count; i++) {
+        msgrcv(p_context->message_queue_id, &msg, sizeof(any_message_t) - sizeof(long), MSG_TYPE_TO_MAIN, 0);
+    }
+
     // Free allocated memory
      free(p_context->source_analyzers_pids);
      free(p_context->destination_analyzers_pids);
 
-    // Free the MQ
-    msgctl(p_context->message_queue_id, IPC_RMID, NULL);
+     if (msgctl(p_context->message_queue_id, IPC_RMID, NULL) == -1) {
+        perror("ERROR freeing message queue\n");
+    }
 }
 
